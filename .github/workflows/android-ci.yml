@@ -1,0 +1,36 @@
+name: Android CI
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  assemble-debug:
+    name: Compilar APK de depuracion
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v6
+
+      - name: Configurar JDK 17 y cache de Gradle
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Verificar Gradle Wrapper
+        run: test -x ./gradlew
+
+      - name: Compilar la aplicacion
+        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug

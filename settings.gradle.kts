@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "IdentificadorIndustrial"
+rootProject.name = "IndusLens"
 include(":app")

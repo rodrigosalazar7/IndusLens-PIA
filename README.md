@@ -1,4 +1,4 @@
-# Identificador Industrial Inteligente
+# IndusLens · Identificador industrial inteligente
 
 Aplicacion Android que identifica piezas y componentes industriales a partir de
 una fotografia, y muestra su informacion y su ubicacion dentro del almacen.
@@ -6,24 +6,60 @@ una fotografia, y muestra su informacion y su ubicacion dentro del almacen.
 **Flujo:** Fotografia → la IA identifica la pieza → consulta a la base de datos →
 muestra informacion y ubicacion.
 
+## Colaboracion del equipo
+
+- [Guia de contribucion](CONTRIBUTING.md): ramas, commits y Pull Requests.
+- [Arquitectura](docs/ARQUITECTURA.md): estructura de paquetes y dependencias.
+- [Actividades 09-11](docs/VERIFICACION_ACTIVIDADES_09_11.md): evidencia al 4 de septiembre de 2026.
+- Cada Pull Request dirigido a `main` se compila automaticamente con Android CI.
+
 ---
 
 ## Como abrir el proyecto
 
 1. Instala Android Studio (incluye el JDK 17, el SDK de Android y Gradle).
 2. Abre Android Studio → **Open** → selecciona esta carpeta
-   (`IdentificadorIndustrial`), no una subcarpeta.
+   (`Identificador-industrial`), no una subcarpeta.
 3. Espera a que termine el *Gradle sync*. La primera vez descarga el SDK y las
    dependencias, puede tardar varios minutos.
 4. Conecta un telefono con **depuracion USB** activada, o crea un emulador en
    *Device Manager*, y pulsa **Run**.
+
+### Probar en una Mac sin telefono Android
+
+La aplicacion Android se puede probar completa en un AVD. En el Pixel 8 de
+Android Studio abre **Device Manager → Edit → Additional settings** y asigna
+`Webcam0` a la camara trasera. Antes de iniciar el AVD se puede comprobar que
+esa fuente sea la camara integrada:
+
+```bash
+arch -arm64 "$HOME/Library/Android/sdk/emulator/emulator" -webcam-list
+```
+
+La salida debe indicar `Camara FaceTime HD = webcam0`. Si aparece la camara del
+iPhone, desconecta temporalmente **Continuity Camera** y reinicia el emulador;
+el AVD conserva el nombre `webcam0`, pero macOS puede cambiar que dispositivo
+ocupa esa posicion. La app guarda el fotograma visible de `PreviewView` en el
+emulador, porque algunas webcams virtuales muestran video pero no completan la
+captura JPEG de CameraX. En un telefono real sigue usando `ImageCapture`.
+
+Tambien se pueden probar imagenes sin camara:
+
+1. Arrastra un JPG, PNG o WebP desde Finder hasta la ventana del emulador.
+2. Android lo copia a **Downloads**.
+3. En la pantalla de camara pulsa **Abrir imagen**.
+4. Abre el menu lateral del selector, entra a **Downloads** y elige el archivo.
+
+El selector tambien acepta Fotos y otros proveedores de archivos. Todo el
+procesamiento es local: seleccionar una imagen no la sube a Internet.
 
 ### Compilar desde la consola
 
 No hace falta abrir el IDE para generar el APK:
 
 ```bash
-cd C:/Users/rodaa/Desktop/Claude/IdentificadorIndustrial && ./gradlew.bat assembleDebug
+cd ruta/al/Identificador-industrial
+./gradlew assembleDebug
 ```
 
 El APK queda en `app/build/outputs/apk/debug/app-debug.apk`.
