@@ -1,5 +1,6 @@
 package com.identificador.industrial.ui.pantallas
 
+import com.identificador.industrial.ui.theme.Espaciado
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CardDefaults
@@ -21,7 +21,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.identificador.industrial.ui.componentes.CampoTexto
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -90,7 +90,7 @@ fun PantallaElegirPieza(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(Espaciado.minimo))
                     Text(
                         text = "Senala cual es y la aprendere para la proxima vez.",
                         style = MaterialTheme.typography.bodyMedium,
@@ -99,13 +99,13 @@ fun PantallaElegirPieza(
                 }
             }
 
-            OutlinedTextField(
+            CampoTexto(
                 value = texto,
                 onValueChange = vm::cambiarBusqueda,
                 placeholder = { Text("Buscar en el catalogo") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
@@ -113,7 +113,7 @@ fun PantallaElegirPieza(
 
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(Espaciado.pequeno)
             ) {
                 FilterChip(
                     selected = filtro == null,
@@ -137,7 +137,7 @@ fun PantallaElegirPieza(
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(32.dp)
+                        modifier = Modifier.padding(Espaciado.extraGrande)
                     )
                 }
             } else {
@@ -161,13 +161,13 @@ fun PantallaElegirPieza(
 private fun FilaEleccion(material: Material, onClick: () -> Unit) {
     ElevatedCard(
         onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(Espaciado.normal)) {
             Text(
                 text = material.nombre,
                 style = MaterialTheme.typography.titleMedium,
@@ -189,7 +189,7 @@ private fun FilaEleccion(material: Material, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Espaciado.pequeno))
             Insignia(
                 texto = material.categoria.etiqueta,
                 color = MaterialTheme.colorScheme.secondary

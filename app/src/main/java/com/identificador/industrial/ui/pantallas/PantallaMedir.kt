@@ -1,5 +1,8 @@
 package com.identificador.industrial.ui.pantallas
 
+import com.identificador.industrial.ui.theme.Espaciado
+import com.identificador.industrial.ui.theme.TamanosControles
+import androidx.compose.foundation.layout.heightIn
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
@@ -16,11 +19,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import com.identificador.industrial.ui.componentes.BotonPrincipal
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.identificador.industrial.ui.componentes.BotonSecundario
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -157,10 +159,10 @@ fun PantallaMedir(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(Espaciado.medio))
                         Row(
                             modifier = Modifier.horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(Espaciado.pequeno)
                         ) {
                             Referencia.entries.forEach { opcion ->
                                 FilterChip(
@@ -172,7 +174,7 @@ fun PantallaMedir(
                         }
 
                         Spacer(Modifier.height(14.dp))
-                        Button(
+                        BotonPrincipal(
                             onClick = {
                                 pixelesReferencia = largoActual
                                 paso = PasoMedicion.PIEZA
@@ -182,10 +184,10 @@ fun PantallaMedir(
                                 puntoB = Offset(puntoB.x, puntoB.y + 260f)
                             },
                             enabled = largoActual > 20f,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.medium,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp)
+                                .heightIn(min = TamanosControles.alturaMinima)
                         ) {
                             Text("Fijar referencia y medir la pieza")
                         }
@@ -207,7 +209,7 @@ fun PantallaMedir(
                                 style = MaterialTheme.typography.headlineMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(Espaciado.minimo))
                             Text(
                                 text = "${medida.enFraccion}  (${String.format("%.2f", medida.pulgadas)} pulgadas)",
                                 style = MaterialTheme.typography.titleMedium,
@@ -224,12 +226,12 @@ fun PantallaMedir(
                         }
 
                         Spacer(Modifier.height(14.dp))
-                        OutlinedButton(
+                        BotonSecundario(
                             onClick = {
                                 paso = PasoMedicion.REFERENCIA
                                 pixelesReferencia = null
                             },
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.medium,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Volver a marcar la referencia")

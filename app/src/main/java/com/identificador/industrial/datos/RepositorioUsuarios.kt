@@ -1,6 +1,7 @@
 package com.identificador.industrial.datos
 
 import com.identificador.industrial.datos.local.UsuarioDao
+import com.identificador.industrial.datos.modelo.NombreUsuario
 import com.identificador.industrial.sesion.Usuario
 
 class RepositorioUsuarios(private val dao: UsuarioDao) {
@@ -13,7 +14,9 @@ class RepositorioUsuarios(private val dao: UsuarioDao) {
      * averiguar que cuentas existen probando nombres.
      */
     suspend fun autenticar(usuario: String, clave: String): Usuario? {
-        val registro = dao.buscarPorUsuario(usuario.trim()) ?: return null
+        val normalizado = NombreUsuario.normalizar(usuario)
+        if (normalizado.isBlank() || clave.isEmpty()) return null
+        val registro = dao.buscarPorUsuario(normalizado) ?: return null
         if (!Claves.verificar(clave, registro.sal, registro.hashClave)) return null
         return Usuario(
             id = registro.id,

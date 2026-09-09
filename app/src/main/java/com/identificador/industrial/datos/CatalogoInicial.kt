@@ -4,7 +4,7 @@ import com.identificador.industrial.datos.modelo.Categoria
 import com.identificador.industrial.datos.modelo.Material
 import com.identificador.industrial.datos.modelo.Ubicacion
 import com.identificador.industrial.datos.modelo.UsuarioEntity
-import com.identificador.industrial.sesion.Rol
+import com.identificador.industrial.datos.modelo.Rol
 
 /**
  * Datos con los que se llena la base la primera vez que se abre la app.
@@ -435,7 +435,7 @@ object CatalogoInicial {
         claveEnClaro: String
     ): UsuarioEntity {
         val sal = Claves.generarSal()
-        return UsuarioEntity(
+        return UsuarioEntity.crear(
             id = id,
             usuario = usuario,
             nombre = nombre,

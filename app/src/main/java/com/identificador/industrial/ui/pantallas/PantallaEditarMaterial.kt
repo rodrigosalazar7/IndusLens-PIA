@@ -1,5 +1,8 @@
 package com.identificador.industrial.ui.pantallas
 
+import com.identificador.industrial.ui.theme.Espaciado
+import com.identificador.industrial.ui.theme.TamanosControles
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,16 +14,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import com.identificador.industrial.ui.componentes.BotonPrincipal
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.identificador.industrial.ui.componentes.BotonSecundario
+import com.identificador.industrial.ui.componentes.CampoTexto
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -66,7 +67,7 @@ fun PantallaEditarMaterial(
             modifier = modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(20.dp),
+                .padding(Espaciado.pantalla),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             if (!f.esNuevo) {
@@ -96,7 +97,7 @@ fun PantallaEditarMaterial(
             Seccion("Categoria")
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(Espaciado.pequeno)
             ) {
                 Categoria.entries.forEach { categoria ->
                     FilterChip(
@@ -126,7 +127,7 @@ fun PantallaEditarMaterial(
             // hacerlo con el teclado numerico es lento y propenso a erratas.
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Espaciado.pequeno),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 BotonAjuste("-10") { vm.actualizar(f.copy(existencia = ajustar(f.existencia, -10))) }
@@ -178,42 +179,34 @@ fun PantallaEditarMaterial(
                 )
             }
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(Espaciado.minimo))
 
-            Button(
+            BotonPrincipal(
                 onClick = { vm.guardar() },
-                enabled = !vm.guardando,
-                shape = RoundedCornerShape(12.dp),
+                cargando = vm.guardando,
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp)
+                    .heightIn(min = TamanosControles.alturaMinima)
             ) {
-                if (vm.guardando) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.height(22.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text(
-                        text = if (f.esNuevo) "Dar de alta" else "Guardar cambios",
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
+                Text(
+                    text = if (f.esNuevo) "Dar de alta" else "Guardar cambios",
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
 
             if (!f.esNuevo) {
-                OutlinedButton(
+                BotonSecundario(
                     onClick = { confirmarBaja = true },
                     enabled = !vm.guardando,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Dar de baja del catalogo")
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Espaciado.medio))
         }
     }
 
@@ -247,11 +240,11 @@ private fun ajustar(valor: String, delta: Int): String =
 
 @Composable
 private fun BotonAjuste(texto: String, onClick: () -> Unit) {
-    OutlinedButton(
+    BotonSecundario(
         onClick = onClick,
-        shape = RoundedCornerShape(10.dp),
+        shape = MaterialTheme.shapes.small,
         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
-        modifier = Modifier.height(52.dp)
+        modifier = Modifier.heightIn(min = TamanosControles.alturaMinima)
     ) {
         Text(texto, style = MaterialTheme.typography.labelMedium)
     }
@@ -277,7 +270,7 @@ private fun Campo(
     lineas: Int = 1,
     alCambiar: (String) -> Unit
 ) {
-    OutlinedTextField(
+    CampoTexto(
         value = valor,
         onValueChange = alCambiar,
         label = { Text(etiqueta) },
@@ -287,7 +280,7 @@ private fun Campo(
         keyboardOptions = KeyboardOptions(
             keyboardType = if (numerico) KeyboardType.Number else KeyboardType.Text
         ),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         modifier = modifier.fillMaxWidth()
     )
 }

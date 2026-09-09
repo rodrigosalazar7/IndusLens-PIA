@@ -49,6 +49,7 @@ fun IndusLensTheme(
     MaterialTheme(
         colorScheme = EsquemaOscuro,
         typography = TipografiaApp,
+        shapes = FormasApp,
         content = content
     )
 }

@@ -1,5 +1,6 @@
 package com.identificador.industrial.ui.pantallas
 
+import com.identificador.industrial.ui.theme.Espaciado
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
@@ -24,7 +24,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.identificador.industrial.ui.componentes.CampoTexto
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -72,7 +72,7 @@ fun PantallaAdmin(
     ) { modifier ->
         Column(modifier = modifier.fillMaxSize()) {
 
-            OutlinedTextField(
+            CampoTexto(
                 value = texto,
                 onValueChange = vm::cambiarBusqueda,
                 placeholder = { Text("Buscar por nombre, numero de parte o fabricante") },
@@ -83,7 +83,7 @@ fun PantallaAdmin(
                     }
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp)
@@ -110,7 +110,7 @@ fun PantallaAdmin(
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(32.dp)
+                        modifier = Modifier.padding(Espaciado.extraGrande)
                     )
                 }
             } else {
@@ -139,13 +139,13 @@ private fun FilaMaterial(
 ) {
     ElevatedCard(
         onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(Espaciado.normal)) {
 
             Text(
                 text = material.nombre,
@@ -191,7 +191,7 @@ private fun FilaMaterial(
                         modifier = Modifier
                             .background(
                                 color = MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(6.dp)
+                                shape = MaterialTheme.shapes.small
                             )
                             .padding(horizontal = 9.dp, vertical = 4.dp)
                     )

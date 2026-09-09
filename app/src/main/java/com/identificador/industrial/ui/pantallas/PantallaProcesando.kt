@@ -1,5 +1,6 @@
 package com.identificador.industrial.ui.pantallas
 
+import com.identificador.industrial.ui.theme.Espaciado
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,7 +72,7 @@ fun PantallaProcesando(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(32.dp),
+                .padding(Espaciado.extraGrande),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

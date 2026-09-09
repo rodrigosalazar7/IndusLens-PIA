@@ -10,14 +10,18 @@ muestra informacion y ubicacion.
 
 - [Guia de contribucion](CONTRIBUTING.md): ramas, commits y Pull Requests.
 - [Arquitectura](docs/ARQUITECTURA.md): estructura de paquetes y dependencias.
+- [Entrega Android](docs/ENTREGA_ANDROID.md): API 26, debug/release, APK y pruebas.
+- [Diseno compartido](docs/DISENO.md): controles y tema reutilizables.
+- [Usuarios](docs/USUARIOS.md): integridad y migracion de Room a version 5.
 - [Actividades 09-11](docs/VERIFICACION_ACTIVIDADES_09_11.md): evidencia al 4 de septiembre de 2026.
+- [Actividades 11-14](docs/VERIFICACION_ACTIVIDADES_11_14.md): cambios y pruebas de esta revision.
 - Cada Pull Request dirigido a `main` se compila automaticamente con Android CI.
 
 ---
 
 ## Como abrir el proyecto
 
-1. Instala Android Studio (incluye el JDK 17, el SDK de Android y Gradle).
+1. Instala Android Studio y los componentes SDK que solicite el proyecto.
 2. Abre Android Studio → **Open** → selecciona esta carpeta
    (`Identificador-industrial`), no una subcarpeta.
 3. Espera a que termine el *Gradle sync*. La primera vez descarga el SDK y las
@@ -62,12 +66,13 @@ cd ruta/al/Identificador-industrial
 ./gradlew assembleDebug
 ```
 
-El APK queda en `app/build/outputs/apk/debug/app-debug.apk`.
+Los APK quedan en `app/build/outputs/apk/debug/`, separados por arquitectura.
+Por ejemplo: `app-arm64-v8a-debug.apk`. Requieren Android 8.0 (API 26) o superior.
 
 Para instalarlo en un telefono conectado por USB:
 
 ```bash
-%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
 ```
 
 ### Cuentas de prueba
@@ -150,7 +155,7 @@ una existencia negativa no significa nada.
 
 ## Base de datos
 
-Tres tablas en SQLite mediante Room. El esquema se exporta a `app/schemas`.
+Cuatro tablas en SQLite mediante Room, version 5. El esquema se exporta a `app/schemas`.
 
 | Tabla | Contenido |
 |-------|-----------|

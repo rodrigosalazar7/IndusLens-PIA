@@ -1,5 +1,8 @@
 package com.identificador.industrial.ui.pantallas
 
+import com.identificador.industrial.ui.theme.Espaciado
+import com.identificador.industrial.ui.theme.TamanosControles
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,9 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import com.identificador.industrial.ui.componentes.BotonPrincipal
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -22,7 +24,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.identificador.industrial.ui.componentes.BotonSecundario
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -91,7 +93,7 @@ fun PantallaDetalle(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(32.dp)
+                    modifier = Modifier.padding(Espaciado.extraGrande)
                 )
             }
 
@@ -125,8 +127,8 @@ private fun Contenido(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(Espaciado.pantalla),
+        verticalArrangement = Arrangement.spacedBy(Espaciado.normal)
     ) {
         Text(
             text = material.nombre,
@@ -134,7 +136,7 @@ private fun Contenido(
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Espaciado.pequeno)) {
             Insignia(
                 texto = material.categoria.etiqueta,
                 color = MaterialTheme.colorScheme.secondary
@@ -193,7 +195,7 @@ private fun Contenido(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Espaciado.pequeno))
             Text(
                 text = material.descripcion,
                 style = MaterialTheme.typography.bodyLarge,
@@ -214,7 +216,7 @@ private fun Contenido(
                     style = MaterialTheme.typography.headlineLarge,
                     color = colorExistencia(material)
                 )
-                Spacer(Modifier.size(8.dp))
+                Spacer(Modifier.size(Espaciado.pequeno))
                 Text(
                     text = material.unidadMedida.lowercase(),
                     style = MaterialTheme.typography.bodyLarge,
@@ -238,7 +240,7 @@ private fun Contenido(
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Espaciado.pequeno))
             Text(
                 text = material.ubicacion.comoLlegar,
                 style = MaterialTheme.typography.bodyMedium,
@@ -265,7 +267,7 @@ private fun Contenido(
                     else -> AmarilloAviso
                 }
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Espaciado.medio))
             Text(
                 text = when {
                     vistas == 0 ->
@@ -285,26 +287,26 @@ private fun Contenido(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(Modifier.height(14.dp))
-            OutlinedButton(
+            BotonSecundario(
                 onClick = { onEnsenarPieza(material.id) },
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(if (vistas == 0) "Ensenar esta pieza" else "Anadir otra vista")
             }
         }
 
-        Button(
+        BotonPrincipal(
             onClick = { onVerUbicacion(material.id) },
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.medium,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp)
+                .heightIn(min = TamanosControles.alturaMinima)
         ) {
             Text("Ver ubicacion en almacen", style = MaterialTheme.typography.labelLarge)
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Espaciado.pequeno))
     }
 }
 
@@ -315,7 +317,7 @@ private fun Tarjeta(contenido: @Composable () -> Unit) {
             .fillMaxWidth()
             .background(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(16.dp)
+                shape = MaterialTheme.shapes.large
             )
             .padding(18.dp)
     ) {

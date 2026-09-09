@@ -1,5 +1,8 @@
 package com.identificador.industrial.ui.pantallas
 
+import com.identificador.industrial.ui.theme.Espaciado
+import com.identificador.industrial.ui.theme.TamanosControles
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,8 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import com.identificador.industrial.ui.componentes.BotonPrincipal
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
@@ -50,7 +52,7 @@ fun PantallaSimilares(
             LazyColumn(
                 modifier = modifier.fillMaxSize(),
                 contentPadding = PaddingValues(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(Espaciado.medio)
             ) {
                 item {
                     Column {
@@ -79,13 +81,13 @@ fun PantallaSimilares(
                 }
 
                 item {
-                    Spacer(Modifier.height(8.dp))
-                    Button(
+                    Spacer(Modifier.height(Espaciado.pequeno))
+                    BotonPrincipal(
                         onClick = onRepetirFoto,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = MaterialTheme.shapes.medium,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp)
+                            .heightIn(min = TamanosControles.alturaMinima)
                     ) {
                         Text("Ninguna es, repetir la fotografia")
                     }
@@ -105,13 +107,13 @@ private fun FilaCoincidencia(
 
     ElevatedCard(
         onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(Espaciado.normal)) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -133,7 +135,7 @@ private fun FilaCoincidencia(
                 )
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Espaciado.pequeno))
 
             Text(
                 text = "${material.numeroParte}  ·  ${material.fabricante}",
@@ -141,7 +143,7 @@ private fun FilaCoincidencia(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Espaciado.medio))
 
             BarraParecido(coincidencia.similitud)
 
@@ -166,7 +168,7 @@ private fun BarraParecido(similitud: Float) {
             .height(6.dp)
             .background(
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(3.dp)
+                shape = MaterialTheme.shapes.extraSmall
             )
     ) {
         Box(
@@ -175,7 +177,7 @@ private fun BarraParecido(similitud: Float) {
                 .height(6.dp)
                 .background(
                     color = colorSegunParecido(similitud),
-                    shape = RoundedCornerShape(3.dp)
+                    shape = MaterialTheme.shapes.extraSmall
                 )
         )
     }
@@ -186,7 +188,7 @@ private fun SinCandidatas(modifier: Modifier, onRepetirFoto: () -> Unit) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(32.dp),
+            .padding(Espaciado.extraGrande),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -196,7 +198,7 @@ private fun SinCandidatas(modifier: Modifier, onRepetirFoto: () -> Unit) {
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(Espaciado.medio))
         Text(
             text = "La busqueda por parecido necesita que las piezas del " +
                 "catalogo tengan una fotografia de referencia. Abre la ficha " +
@@ -207,12 +209,12 @@ private fun SinCandidatas(modifier: Modifier, onRepetirFoto: () -> Unit) {
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(28.dp))
-        Button(
+        BotonPrincipal(
             onClick = onRepetirFoto,
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.medium,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp)
+                .heightIn(min = TamanosControles.alturaMinima)
         ) {
             Text("Repetir la fotografia")
         }

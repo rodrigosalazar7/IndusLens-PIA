@@ -1,5 +1,8 @@
 package com.identificador.industrial.ui.pantallas
 
+import com.identificador.industrial.ui.theme.Espaciado
+import com.identificador.industrial.ui.theme.TamanosControles
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -8,11 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import com.identificador.industrial.ui.componentes.BotonPrincipal
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.identificador.industrial.ui.componentes.BotonSecundario
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -60,7 +62,7 @@ fun PantallaEnrolar(
                     modifier = Modifier.size(48.dp),
                     color = MaterialTheme.colorScheme.primary
                 )
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(Espaciado.grande))
                 Text(
                     text = "Calculando la huella visual",
                     style = MaterialTheme.typography.titleMedium,
@@ -79,14 +81,14 @@ fun PantallaEnrolar(
                     texto = if (estado.vistas == 1) "1 vista guardada" else "${estado.vistas} vistas guardadas",
                     color = if (completa) VerdeExito else AmarilloAviso
                 )
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(Espaciado.pantalla))
                 Text(
                     text = estado.nombreMaterial,
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                     textAlign = TextAlign.Center
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Espaciado.medio))
                 Text(
                     text = if (completa) {
                         "Esta pieza ya se reconoce desde varios angulos aunque " +
@@ -100,20 +102,20 @@ fun PantallaEnrolar(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
-                Spacer(Modifier.height(32.dp))
-                Button(
+                Spacer(Modifier.height(Espaciado.extraGrande))
+                BotonPrincipal(
                     onClick = { vm.reiniciar(); onVolver() },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp)
+                        .heightIn(min = TamanosControles.alturaMinima)
                 ) {
                     Text("Listo")
                 }
                 Spacer(Modifier.height(10.dp))
-                OutlinedButton(
+                BotonSecundario(
                     onClick = { vm.reiniciar() },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Anadir otra vista")
@@ -139,12 +141,12 @@ fun PantallaEnrolar(
                     textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(28.dp))
-                Button(
+                BotonPrincipal(
                     onClick = { vm.reiniciar() },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp)
+                        .heightIn(min = TamanosControles.alturaMinima)
                 ) {
                     Text("Intentar de nuevo")
                 }
@@ -158,7 +160,7 @@ private fun Centro(modifier: Modifier, contenido: @Composable () -> Unit) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(32.dp),
+            .padding(Espaciado.extraGrande),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

@@ -16,6 +16,7 @@ interface UsuarioDao {
     @Query("SELECT COUNT(*) FROM usuarios")
     suspend fun contar(): Int
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    /** Una colision se rechaza; nunca sustituye la cuenta que ya existe. */
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertarTodos(usuarios: List<UsuarioEntity>)
 }

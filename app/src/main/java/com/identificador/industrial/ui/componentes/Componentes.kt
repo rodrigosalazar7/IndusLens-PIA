@@ -1,5 +1,8 @@
 package com.identificador.industrial.ui.componentes
 
+import com.identificador.industrial.ui.theme.Espaciado
+import com.identificador.industrial.ui.theme.TamanosControles
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -13,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,7 +25,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.identificador.industrial.ui.componentes.BotonSecundario
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -96,7 +98,7 @@ fun TarjetaAccion(
         onClick = onClick,
         enabled = habilitada,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surface,
             disabledContainerColor = MaterialTheme.colorScheme.surface
@@ -113,7 +115,7 @@ fun TarjetaAccion(
                     .size(52.dp)
                     .background(
                         color = colorIcono.copy(alpha = 0.14f),
-                        shape = RoundedCornerShape(14.dp)
+                        shape = MaterialTheme.shapes.medium
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -125,7 +127,7 @@ fun TarjetaAccion(
                 )
             }
 
-            Spacer(Modifier.size(16.dp))
+            Spacer(Modifier.size(Espaciado.normal))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -164,11 +166,11 @@ fun PantallaPendiente(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(Espaciado.pantalla),
+        verticalArrangement = Arrangement.spacedBy(Espaciado.normal)
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Espaciado.pequeno),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Insignia(texto = "Pantalla $numeroPantalla")
@@ -190,9 +192,9 @@ fun PantallaPendiente(
                 .border(
                     width = 1.dp,
                     color = MaterialTheme.colorScheme.outline,
-                    shape = RoundedCornerShape(14.dp)
+                    shape = MaterialTheme.shapes.medium
                 )
-                .padding(16.dp),
+                .padding(Espaciado.normal),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
@@ -223,12 +225,12 @@ fun PantallaPendiente(
         }
 
         accionesPrueba.forEach { (texto, accion) ->
-            OutlinedButton(
+            BotonSecundario(
                 onClick = accion,
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .heightIn(min = TamanosControles.alturaMinima)
             ) {
                 Text(texto)
             }
@@ -249,7 +251,7 @@ fun Insignia(
         modifier = Modifier
             .background(
                 color = color.copy(alpha = 0.14f),
-                shape = RoundedCornerShape(6.dp)
+                shape = MaterialTheme.shapes.small
             )
             .padding(horizontal = 9.dp, vertical = 4.dp)
     )

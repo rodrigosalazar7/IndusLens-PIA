@@ -1,5 +1,8 @@
 package com.identificador.industrial.ui.pantallas
 
+import com.identificador.industrial.ui.theme.Espaciado
+import com.identificador.industrial.ui.theme.TamanosControles
+import androidx.compose.foundation.layout.heightIn
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.Image
@@ -14,11 +17,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import com.identificador.industrial.ui.componentes.BotonPrincipal
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.identificador.industrial.ui.componentes.BotonSecundario
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -62,8 +64,8 @@ fun PantallaResultado(
             modifier = modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(Espaciado.pantalla),
+            verticalArrangement = Arrangement.spacedBy(Espaciado.normal)
         ) {
             if (foto != null) FotoTomada(foto)
 
@@ -108,16 +110,16 @@ fun PantallaResultado(
             }
 
             if (foto != null) {
-                OutlinedButton(
+                BotonSecundario(
                     onClick = onMedir,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
+                        .heightIn(min = TamanosControles.alturaMinima)
                 ) {
                     Text("Medir la pieza en la foto")
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Espaciado.pequeno))
             }
         }
     }
@@ -136,7 +138,7 @@ private fun FotoTomada(uri: Uri) {
         modifier = Modifier
             .fillMaxWidth()
             .height(220.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(MaterialTheme.shapes.large)
             .background(MaterialTheme.colorScheme.surface),
         contentAlignment = Alignment.Center
     ) {
@@ -160,7 +162,7 @@ private fun Acierto(
     onVerDetalle: (String) -> Unit,
     onVerSimilares: () -> Unit
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Espaciado.pequeno)) {
         Insignia(texto = "Identificada", color = VerdeExito)
         Insignia(
             texto = "${(confianza * 100).toInt()}% de confianza",
@@ -190,7 +192,7 @@ private fun Acierto(
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(Espaciado.medio))
         // Se explica siempre COMO se llego a esta pieza. Un parecido visual y
         // una lectura del numero grabado no merecen la misma confianza, y quien
         // va a tomar el material tiene derecho a saber cual de las dos fue.
@@ -218,13 +220,13 @@ private fun Acierto(
         // Las medidas salen del catalogo, no de medir la foto: son el dato
         // del fabricante y por tanto exactas.
         material.medidas?.let { medidas ->
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Espaciado.medio))
             Text(
                 text = "Medidas",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(Espaciado.minimo))
             Text(
                 text = medidas,
                 style = MaterialTheme.typography.titleMedium,
@@ -233,22 +235,22 @@ private fun Acierto(
         }
     }
 
-    Button(
+    BotonPrincipal(
         onClick = { onVerDetalle(material.id) },
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .heightIn(min = TamanosControles.alturaMinima)
     ) {
         Text("Ver detalle del material", style = MaterialTheme.typography.labelLarge)
     }
 
-    OutlinedButton(
+    BotonSecundario(
         onClick = onVerSimilares,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
-            .height(50.dp)
+            .heightIn(min = TamanosControles.alturaMinima)
     ) {
         Text("No es esta, ver piezas similares")
     }
@@ -284,12 +286,12 @@ private fun HayParecidas(
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
 
-    Button(
+    BotonPrincipal(
         onClick = onVerSimilares,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .heightIn(min = TamanosControles.alturaMinima)
     ) {
         Text(
             text = if (cuantas == 1) "Ver la pieza parecida" else "Ver las $cuantas piezas parecidas",
@@ -299,22 +301,22 @@ private fun HayParecidas(
 
     PistasIA(pistas)
 
-    OutlinedButton(
+    BotonSecundario(
         onClick = onElegirPieza,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
-            .height(50.dp)
+            .heightIn(min = TamanosControles.alturaMinima)
     ) {
         Text("Decirle yo que pieza es")
     }
 
-    OutlinedButton(
+    BotonSecundario(
         onClick = onRepetirFoto,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
-            .height(50.dp)
+            .heightIn(min = TamanosControles.alturaMinima)
     ) {
         Text("Repetir la fotografia")
     }
@@ -344,7 +346,7 @@ private fun PistasIA(pistas: List<Pista>) {
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Espaciado.pequeno))
             Text(
                 text = "El modelo general distingue formas corrientes como " +
                     "tornillos, cadenas o herramientas. Con tuercas, rodamientos " +
@@ -373,7 +375,7 @@ private fun PistasIA(pistas: List<Pista>) {
                 )
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Espaciado.pequeno))
         Text(
             text = "Reconoce formas comunes, no numeros de parte. Es una pista " +
                 "para acotar el catalogo, no una identificacion.",
@@ -429,7 +431,7 @@ private fun SinAcierto(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Espaciado.pequeno))
             Text(
                 text = textoLeido.trim(),
                 style = MaterialTheme.typography.labelMedium,
@@ -441,22 +443,22 @@ private fun SinAcierto(
     PistasIA(pistas)
 
     // Accion principal: que la persona resuelva y de paso ensene a la app.
-    Button(
+    BotonPrincipal(
         onClick = onElegirPieza,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .heightIn(min = TamanosControles.alturaMinima)
     ) {
         Text("Decirle yo que pieza es", style = MaterialTheme.typography.labelLarge)
     }
 
-    OutlinedButton(
+    BotonSecundario(
         onClick = onRepetirFoto,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
-            .height(50.dp)
+            .heightIn(min = TamanosControles.alturaMinima)
     ) {
         Text("Repetir la fotografia")
     }
@@ -475,12 +477,12 @@ private fun Aviso(titulo: String, cuerpo: String, onRepetirFoto: () -> Unit) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Start
     )
-    Button(
+    BotonPrincipal(
         onClick = onRepetirFoto,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .heightIn(min = TamanosControles.alturaMinima)
     ) {
         Text("Tomar una fotografia")
     }
@@ -493,7 +495,7 @@ private fun Tarjeta(contenido: @Composable () -> Unit) {
             .fillMaxWidth()
             .background(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(16.dp)
+                shape = MaterialTheme.shapes.large
             )
             .padding(18.dp)
     ) {

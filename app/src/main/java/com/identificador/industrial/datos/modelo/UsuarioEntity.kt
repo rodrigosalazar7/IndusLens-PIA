@@ -1,9 +1,9 @@
 package com.identificador.industrial.datos.modelo
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.identificador.industrial.sesion.Rol
 
 /**
  * Usuario que puede entrar a la app.
@@ -23,10 +23,38 @@ import com.identificador.industrial.sesion.Rol
 )
 data class UsuarioEntity(
     @PrimaryKey val id: String,
-    val usuario: String,
+    @ColumnInfo(collate = ColumnInfo.NOCASE) val usuario: String,
     val nombre: String,
     val rol: Rol,
     val hashClave: String,
     val sal: String,
     val activo: Boolean = true
-)
+) {
+    init {
+        require(id.isNotBlank()) { "El identificador de usuario es obligatorio" }
+        NombreUsuario.validar(usuario)
+        require(nombre.isNotBlank()) { "El nombre es obligatorio" }
+        require(hashClave.isNotBlank() && sal.isNotBlank()) { "Las credenciales son obligatorias" }
+    }
+
+    companion object {
+        /** Entrada para nuevas cuentas; la lectura de Room ya contiene datos canonicos. */
+        fun crear(
+            id: String,
+            usuario: String,
+            nombre: String,
+            rol: Rol,
+            hashClave: String,
+            sal: String,
+            activo: Boolean = true
+        ): UsuarioEntity = UsuarioEntity(
+            id = id,
+            usuario = NombreUsuario.normalizar(usuario),
+            nombre = nombre.trim(),
+            rol = rol,
+            hashClave = hashClave,
+            sal = sal,
+            activo = activo
+        )
+    }
+}

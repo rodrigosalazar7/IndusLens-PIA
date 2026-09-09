@@ -1,5 +1,6 @@
 package com.identificador.industrial.ui.pantallas
 
+import com.identificador.industrial.ui.theme.Espaciado
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -29,10 +30,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.identificador.industrial.ui.componentes.BotonPrincipal
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.identificador.industrial.ui.componentes.BotonSecundario
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -305,7 +306,7 @@ private fun MarcoGuia(texto: String) {
                     .border(
                         width = 2.dp,
                         color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(20.dp)
+                        shape = MaterialTheme.shapes.large
                     )
             )
             Spacer(Modifier.height(18.dp))
@@ -317,7 +318,7 @@ private fun MarcoGuia(texto: String) {
                 modifier = Modifier
                     .background(
                         color = Color.Black.copy(alpha = 0.55f),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = MaterialTheme.shapes.small
                     )
                     .padding(horizontal = 12.dp, vertical = 7.dp)
             )
@@ -382,7 +383,7 @@ private fun SinPermiso(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
+            .padding(Espaciado.extraGrande),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -398,12 +399,12 @@ private fun SinPermiso(
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = onReintentar, shape = RoundedCornerShape(12.dp)) {
+        Spacer(Modifier.height(Espaciado.grande))
+        BotonPrincipal(onClick = onReintentar, shape = MaterialTheme.shapes.medium) {
             Text("Conceder permiso")
         }
-        Spacer(Modifier.height(12.dp))
-        OutlinedButton(onClick = onSeleccionarImagen, shape = RoundedCornerShape(12.dp)) {
+        Spacer(Modifier.height(Espaciado.medio))
+        BotonSecundario(onClick = onSeleccionarImagen, shape = MaterialTheme.shapes.medium) {
             Text("Seleccionar imagen")
         }
         Spacer(Modifier.height(10.dp))
@@ -425,7 +426,7 @@ private fun SinCamara(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
+            .padding(Espaciado.extraGrande),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -442,14 +443,14 @@ private fun SinCamara(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = onReintentar, shape = RoundedCornerShape(12.dp)) {
+        Spacer(Modifier.height(Espaciado.grande))
+        BotonPrincipal(onClick = onReintentar, shape = MaterialTheme.shapes.medium) {
             Text("Reintentar camara")
         }
-        Spacer(Modifier.height(12.dp))
-        OutlinedButton(
+        Spacer(Modifier.height(Espaciado.medio))
+        BotonSecundario(
             onClick = onSeleccionarImagen,
-            shape = RoundedCornerShape(12.dp)
+            shape = MaterialTheme.shapes.medium
         ) {
             Text("Seleccionar imagen")
         }

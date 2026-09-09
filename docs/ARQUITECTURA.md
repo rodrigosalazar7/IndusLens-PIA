@@ -14,12 +14,12 @@ com.identificador.industrial/
 ├── MainActivity.kt
 ├── AplicacionIdentificador.kt
 ├── datos/
-│   ├── modelo/        Entidades y tipos del negocio
+│   ├── modelo/        Entidades y tipos del negocio, incluido Rol
 │   ├── local/         Room, DAO, convertidores y migraciones
 │   └── Repositorio*   Acceso unico a los datos
 ├── ia/                OCR, embeddings, similitud y procesamiento de fotos
 ├── navegacion/        Rutas y grafo de Navigation Compose
-├── sesion/            Usuario activo, autenticacion y roles
+├── sesion/            Estado del usuario activo y acceso a la autenticacion
 └── ui/
     ├── componentes/   Componentes reutilizables
     ├── pantallas/     Pantallas y ViewModel
@@ -35,6 +35,20 @@ Camara o archivo -> procesamiento IA -> Repositorio -> resultado en pantalla
 
 Las pantallas no consultan los DAO directamente. Esta separacion permite
 probar, mantener o sustituir el origen de los datos sin reescribir la interfaz.
+
+`Rol` pertenece a `datos/modelo/Rol.kt`: lo comparten la entidad de usuario,
+los convertidores de Room, el catalogo inicial y la sesion. Los datos ya no
+dependen de `SesionViewModel` para declarar este tipo. Se conservan los valores
+`OPERADOR`, `ALMACENISTA` y `ADMINISTRADOR`, por lo que mover el archivo no cambia
+los permisos ni los valores almacenados.
+
+El proyecto conserva un solo modulo, adecuado para la entrega de semestre.
+Este ajuste no pretende una arquitectura de dominio completamente independiente:
+`RepositorioUsuarios` todavia devuelve el objeto de sesion `Usuario`.
+
+- [Diseno compartido](DISENO.md): controles, formas, tipografia y espaciados.
+- [Integridad de usuarios](USUARIOS.md): reglas y migracion de la version 4 a 5.
+- [Entrega Android](ENTREGA_ANDROID.md): API 26, debug, release y pruebas.
 
 ## Archivos de configuracion
 

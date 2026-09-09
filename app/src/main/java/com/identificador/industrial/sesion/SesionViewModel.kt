@@ -6,13 +6,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.identificador.industrial.datos.RepositorioUsuarios
+import com.identificador.industrial.datos.modelo.Rol
 import kotlinx.coroutines.launch
-
-enum class Rol(val etiqueta: String) {
-    OPERADOR("Operador"),
-    ALMACENISTA("Almacenista"),
-    ADMINISTRADOR("Administrador")
-}
 
 data class Usuario(
     val id: String,

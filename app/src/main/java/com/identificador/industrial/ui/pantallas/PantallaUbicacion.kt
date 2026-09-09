@@ -1,5 +1,6 @@
 package com.identificador.industrial.ui.pantallas
 
+import com.identificador.industrial.ui.theme.Espaciado
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -62,7 +62,7 @@ fun PantallaUbicacion(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(32.dp)
+                    modifier = Modifier.padding(Espaciado.extraGrande)
                 )
             }
 
@@ -80,8 +80,8 @@ private fun Contenido(modifier: Modifier, estado: EstadoUbicacion) {
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(Espaciado.pantalla),
+        verticalArrangement = Arrangement.spacedBy(Espaciado.normal)
     ) {
         Text(
             text = material.nombre,
@@ -95,7 +95,7 @@ private fun Contenido(modifier: Modifier, estado: EstadoUbicacion) {
                 .fillMaxWidth()
                 .background(
                     color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(16.dp)
+                    shape = MaterialTheme.shapes.large
                 )
                 .padding(vertical = 26.dp),
             contentAlignment = Alignment.Center
@@ -116,7 +116,7 @@ private fun Contenido(modifier: Modifier, estado: EstadoUbicacion) {
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Espaciado.medio))
             listOf(
                 "Entra al almacen ${u.almacen}",
                 "Recorre hasta el pasillo ${u.pasillo}",
@@ -133,7 +133,7 @@ private fun Contenido(modifier: Modifier, estado: EstadoUbicacion) {
                             .size(26.dp)
                             .background(
                                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                                shape = RoundedCornerShape(13.dp)
+                                shape = MaterialTheme.shapes.medium
                             ),
                         contentAlignment = Alignment.Center
                     ) {
@@ -186,7 +186,7 @@ private fun Contenido(modifier: Modifier, estado: EstadoUbicacion) {
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(Espaciado.minimo))
                 Text(
                     text = "Por si vas a por varias cosas del mismo viaje.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -199,7 +199,7 @@ private fun Contenido(modifier: Modifier, estado: EstadoUbicacion) {
             }
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Espaciado.pequeno))
     }
 }
 
@@ -253,19 +253,19 @@ private fun Plano(plano: PlanoAlmacen, pasilloActual: String, rackActual: String
                             .fillMaxWidth()
                             .background(
                                 color = MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(6.dp)
+                                shape = MaterialTheme.shapes.small
                             )
                     )
                 }
             }
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(Espaciado.medio))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .size(14.dp)
-                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(3.dp))
+                    .background(MaterialTheme.colorScheme.primary, MaterialTheme.shapes.extraSmall)
             )
             Spacer(Modifier.width(8.dp))
             Text(
@@ -288,12 +288,12 @@ private fun CeldaRack(rack: String, resaltado: Boolean) {
                 } else {
                     MaterialTheme.colorScheme.surfaceVariant
                 },
-                shape = RoundedCornerShape(6.dp)
+                shape = MaterialTheme.shapes.small
             )
             .border(
                 width = if (resaltado) 0.dp else 1.dp,
                 color = MaterialTheme.colorScheme.outline,
-                shape = RoundedCornerShape(6.dp)
+                shape = MaterialTheme.shapes.small
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -343,7 +343,7 @@ private fun Tarjeta(contenido: @Composable () -> Unit) {
             .fillMaxWidth()
             .background(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(16.dp)
+                shape = MaterialTheme.shapes.large
             )
             .padding(18.dp)
     ) {

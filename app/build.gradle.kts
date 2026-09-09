@@ -22,6 +22,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -49,6 +50,8 @@ android {
     buildFeatures {
         compose = true
     }
+
+    sourceSets.getByName("androidTest").assets.directories.add("$projectDir/schemas")
 
     /**
      * Un APK por arquitectura de CPU.
@@ -88,6 +91,9 @@ ksp {
 }
 
 dependencies {
+    // Room testing usa serializadores generados con 1.8.1. Alinear tambien el
+    // runtime de la app evita que Android cargue el core transitivo 1.7.3.
+    implementation(platform(libs.kotlinx.serialization.bom))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -116,4 +122,13 @@ dependencies {
     implementation(libs.mediapipe.tasks.vision)
 
     debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
+    testImplementation(libs.junit)
+    androidTestImplementation(composeBom)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.junit)
+    // 3.7 evita reflexion sobre InputManager, incompatible con Android recientes.
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.androidx.ui.test.junit4)
 }

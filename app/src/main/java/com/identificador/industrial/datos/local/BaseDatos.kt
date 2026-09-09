@@ -24,7 +24,7 @@ import org.json.JSONArray
         Busqueda::class,
         EmbeddingMaterial::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Convertidores::class)
@@ -112,14 +112,14 @@ abstract class BaseDatos : RoomDatabase() {
                 instancia ?: crear(contexto).also { instancia = it }
             }
 
-        private fun crear(contexto: Context): BaseDatos =
+        internal fun crear(contexto: Context, nombreArchivo: String = NOMBRE_ARCHIVO): BaseDatos =
             Room.databaseBuilder(
                 contexto.applicationContext,
                 BaseDatos::class.java,
-                NOMBRE_ARCHIVO
+                nombreArchivo
             )
                 .addCallback(Sembrado(contexto.applicationContext))
-                .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4)
+                .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MigracionUsuarios4a5)
                 .build()
 
         /**
@@ -167,6 +167,7 @@ abstract class BaseDatos : RoomDatabase() {
 
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
+                IntegridadUsuarios.sentencias.forEach(db::execSQL)
                 insertarMateriales(db)
                 insertarUsuarios(db)
                 insertarHuellas(db)

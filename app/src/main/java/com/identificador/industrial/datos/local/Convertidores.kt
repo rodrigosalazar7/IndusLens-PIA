@@ -3,7 +3,7 @@ package com.identificador.industrial.datos.local
 import androidx.room.TypeConverter
 import com.identificador.industrial.datos.modelo.Categoria
 import com.identificador.industrial.datos.modelo.MetodoIdentificacion
-import com.identificador.industrial.sesion.Rol
+import com.identificador.industrial.datos.modelo.Rol
 
 /**
  * SQLite no conoce los enums de Kotlin, asi que se guardan como texto.
@@ -32,5 +32,5 @@ class Convertidores {
 
     @TypeConverter
     fun textoARol(valor: String): Rol =
-        Rol.entries.firstOrNull { it.name == valor } ?: Rol.OPERADOR
+        Rol.valueOf(valor)
 }

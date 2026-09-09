@@ -1,5 +1,6 @@
 package com.identificador.industrial.ui.pantallas
 
+import com.identificador.industrial.ui.theme.Espaciado
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
@@ -58,7 +58,7 @@ fun PantallaMenu(
         ) {
             if (usuario != null) {
                 CabeceraUsuario(usuario)
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(Espaciado.minimo))
             }
 
             TarjetaAccion(
@@ -99,7 +99,7 @@ private fun CabeceraUsuario(usuario: Usuario) {
             .fillMaxWidth()
             .background(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(16.dp)
+                shape = MaterialTheme.shapes.large
             )
             .padding(18.dp),
         verticalAlignment = Alignment.CenterVertically

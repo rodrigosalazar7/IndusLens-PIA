@@ -1,5 +1,8 @@
 package com.identificador.industrial.ui.pantallas
 
+import com.identificador.industrial.ui.theme.Espaciado
+import com.identificador.industrial.ui.theme.TamanosControles
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -13,18 +16,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import com.identificador.industrial.ui.componentes.BotonPrincipal
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.identificador.industrial.ui.componentes.CampoTexto
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -77,7 +78,7 @@ fun PantallaLogin(
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
-                .widthIn(max = 420.dp)
+                .widthIn(max = TamanosControles.anchoFormulario)
                 .padding(horizontal = 28.dp, vertical = 40.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -101,7 +102,7 @@ fun PantallaLogin(
 
             Spacer(Modifier.height(36.dp))
 
-            OutlinedTextField(
+            CampoTexto(
                 value = usuario,
                 onValueChange = {
                     usuario = it
@@ -118,13 +119,13 @@ fun PantallaLogin(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next
                 ),
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.height(14.dp))
 
-            OutlinedTextField(
+            CampoTexto(
                 value = clave,
                 onValueChange = {
                     clave = it
@@ -152,7 +153,7 @@ fun PantallaLogin(
                     imeAction = ImeAction.Done
                 ),
                 keyboardActions = KeyboardActions(onDone = { intentarEntrar() }),
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -161,7 +162,7 @@ fun PantallaLogin(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(34.dp),
+                    .heightIn(min = 34.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
                 sesion.error?.let { mensaje ->
@@ -173,23 +174,15 @@ fun PantallaLogin(
                 }
             }
 
-            Button(
+            BotonPrincipal(
                 onClick = { intentarEntrar() },
-                enabled = !sesion.cargando,
-                shape = RoundedCornerShape(12.dp),
+                cargando = sesion.cargando,
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp)
+                    .heightIn(min = TamanosControles.alturaMinima)
             ) {
-                if (sesion.cargando) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(22.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text("Entrar", style = MaterialTheme.typography.labelLarge)
-                }
+                Text("Entrar", style = MaterialTheme.typography.labelLarge)
             }
 
             Spacer(Modifier.height(28.dp))
@@ -206,7 +199,7 @@ private fun LogoIndusLens() {
             .size(108.dp)
             .background(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(28.dp)
+                shape = MaterialTheme.shapes.extraLarge
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -219,8 +212,7 @@ private fun LogoIndusLens() {
 }
 
 /**
- * Recordatorio de las credenciales de prueba. Este bloque se borra en cuanto
- * el login consulte la tabla de usuarios real (fase 2).
+ * Cuentas de demostracion sembradas en Room. No usar estas claves en produccion.
  */
 @Composable
 private fun AvisoCredencialesDemo() {
@@ -229,9 +221,9 @@ private fun AvisoCredencialesDemo() {
             .fillMaxWidth()
             .background(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(12.dp)
+                shape = MaterialTheme.shapes.medium
             )
-            .padding(16.dp),
+            .padding(Espaciado.normal),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(
