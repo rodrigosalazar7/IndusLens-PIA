@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "583575524509",
+    "project_id": "induslens-control-rodaa",
+    "storage_bucket": "induslens-control-rodaa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:583575524509:android:63b67c3158d862e92d3074",
+        "android_client_info": {
+          "package_name": "com.identificador.industrial.control"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqss_1lUfySDyqil--uQn_na8mKtRSJS0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

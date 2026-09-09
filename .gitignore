@@ -1,5 +1,6 @@
 *.iml
 .gradle/
+.firebase-cli-cache/
 local.properties
 .idea/
 .DS_Store

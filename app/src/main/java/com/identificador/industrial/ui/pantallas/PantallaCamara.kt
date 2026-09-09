@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -53,6 +54,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.identificador.industrial.ia.Fotos
+import com.identificador.industrial.ia.PreferenciasIA
 import com.identificador.industrial.ui.componentes.PantallaBase
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -93,6 +95,10 @@ fun PantallaCamara(
     var camara by remember { mutableStateOf<Camera?>(null) }
     var proveedorCamara by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var intentoCamara by remember { mutableStateOf(0) }
+    var iaEnLinea by remember { mutableStateOf(PreferenciasIA.usarEnLinea(contexto)) }
+    var mostrarAvisoIA by remember {
+        mutableStateOf(!PreferenciasIA.decisionTomada(contexto))
+    }
 
     val vistaPrevia = remember {
         PreviewView(contexto).apply { scaleType = PreviewView.ScaleType.FILL_CENTER }
@@ -282,18 +288,64 @@ fun PantallaCamara(
                         },
                         onSeleccionarImagen = { abrirSelectorDeImagen() }
                     )
+                    ModoReconocimiento(
+                        enLinea = iaEnLinea,
+                        onCambiar = { mostrarAvisoIA = true },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp)
+                    )
                 }
             }
         }
+    }
+
+    if (mostrarAvisoIA) {
+        AlertDialog(
+            onDismissRequest = {
+                PreferenciasIA.guardar(contexto, usarEnLinea = false)
+                iaEnLinea = false
+                mostrarAvisoIA = false
+            },
+            title = { Text("Reconocimiento visual") },
+            text = {
+                Text(
+                    "Para reconocer mas objetos, IndusLens puede enviar a Firebase AI " +
+                        "de Google solamente el recorte central de la fotografia. Si no " +
+                        "hay Internet o eliges Solo en el telefono, usa el modelo local."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        PreferenciasIA.guardar(contexto, usarEnLinea = true)
+                        iaEnLinea = true
+                        mostrarAvisoIA = false
+                    }
+                ) {
+                    Text("Usar IA en linea")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        PreferenciasIA.guardar(contexto, usarEnLinea = false)
+                        iaEnLinea = false
+                        mostrarAvisoIA = false
+                    }
+                ) {
+                    Text("Solo en el telefono")
+                }
+            }
+        )
     }
 }
 
 /**
  * Marco que indica donde encuadrar la pieza.
  *
- * No recorta nada: el analisis usa la foto completa. Sirve para que el
- * operador acerque y centre la pieza, que es lo que de verdad mejora la
- * lectura del numero de parte.
+ * El analisis recorta la zona central aproximada de este marco. Asi el modelo
+ * describe el objeto enfocado y no la mesa, la pared o el resto del almacen.
  */
 @Composable
 private fun MarcoGuia(texto: String) {
@@ -322,6 +374,26 @@ private fun MarcoGuia(texto: String) {
                     .padding(horizontal = 12.dp, vertical = 7.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun ModoReconocimiento(
+    enLinea: Boolean,
+    onCambiar: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    TextButton(
+        onClick = onCambiar,
+        modifier = modifier.background(
+            color = Color.Black.copy(alpha = 0.62f),
+            shape = RoundedCornerShape(10.dp)
+        )
+    ) {
+        Text(
+            text = if (enLinea) "IA en linea + local" else "IA local",
+            color = Color.White
+        )
     }
 }
 

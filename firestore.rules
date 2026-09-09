@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function correoVerificado() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function perfilActual() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+
+    function esAdministrador() {
+      return correoVerificado()
+        && perfilActual().data.activo == true
+        && perfilActual().data.rol == 'ADMINISTRADOR';
+    }
+
+    match /usuarios/{uid} {
+      allow read: if correoVerificado()
+        && (request.auth.uid == uid || esAdministrador());
+
+      // Cada persona puede crear su perfil inicial, pero nunca darse a si
+      // misma permisos. El primer ADMINISTRADOR se asigna desde la consola.
+      allow create: if correoVerificado()
+        && request.auth.uid == uid
+        && request.resource.data.rol == 'OPERADOR'
+        && request.resource.data.activo == true;
+
+      allow update, delete: if esAdministrador();
+    }
+
+    match /materiales/{materialId} {
+      allow read: if correoVerificado();
+      allow create, update: if esAdministrador()
+        && request.resource.data.numeroParte is string
+        && request.resource.data.nombre is string
+        && request.resource.data.existencia is int
+        && request.resource.data.existencia >= 0;
+      allow delete: if esAdministrador();
+    }
+  }
+}

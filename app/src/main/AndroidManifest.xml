@@ -4,6 +4,7 @@
     <!-- La camara se pide en tiempo de ejecucion (fase 3). Se declara como
          no requerida para que la app tambien instale en dispositivos sin camara. -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />

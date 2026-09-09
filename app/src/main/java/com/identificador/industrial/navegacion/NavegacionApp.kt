@@ -81,7 +81,7 @@ fun NavegacionApp() {
         composable(Rutas.CAMARA) {
             PantallaCamara(
                 titulo = "Identificar pieza",
-                textoGuia = "Encuadra la pieza y acerca el numero de parte",
+                textoGuia = "Centra el objeto completo dentro del cuadro",
                 onVolver = { navController.popBackStack() },
                 onFotoTomada = { uri ->
                     identificacion.registrarFoto(uri)

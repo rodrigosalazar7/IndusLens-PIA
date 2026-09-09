@@ -20,12 +20,15 @@ import com.identificador.industrial.ia.ExtractorNumeroParte
 import com.identificador.industrial.ia.Fotos
 import com.identificador.industrial.ia.LectorTexto
 import com.identificador.industrial.ia.Pista
+import com.identificador.industrial.ia.PreferenciasIA
+import com.identificador.industrial.ia.ReconocedorEnLinea
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,6 +38,7 @@ import kotlinx.coroutines.withContext
 enum class PasoAnalisis(val etiqueta: String) {
     LEYENDO("Leyendo el texto de la pieza"),
     BUSCANDO("Buscando el numero de parte en el catalogo"),
+    RECONOCIENDO("Reconociendo el objeto con IA"),
     COMPARANDO("Comparando la forma con el catalogo")
 }
 
@@ -110,7 +114,9 @@ class IdentificacionViewModel(
      */
     private val obtenerEmbebedor: () -> Embebedor,
     /** Igual que el embebedor: se difiere para no cargar el modelo al arrancar. */
-    private val obtenerClasificador: () -> ClasificadorGenerico
+    private val obtenerClasificador: () -> ClasificadorGenerico,
+    /** Reconocimiento amplio en la nube; siempre tiene respaldo local. */
+    private val obtenerReconocedorEnLinea: () -> ReconocedorEnLinea
 ) : ViewModel() {
 
     private val lector = LectorTexto()
@@ -203,9 +209,9 @@ class IdentificacionViewModel(
             return
         }
 
-        // --- Paso 3: comparar la forma con el catalogo ---
+        // --- Paso 3: reconocimiento general real ---
         delay(250)
-        _estado.value = EstadoIdentificacion.Analizando(PasoAnalisis.COMPARANDO)
+        _estado.value = EstadoIdentificacion.Analizando(PasoAnalisis.RECONOCIENDO)
 
         // Se carga UNA vez la imagen recortada al marco guia y se reutiliza
         // para comparar y para clasificar. Recortar es imprescindible: sin
@@ -213,6 +219,40 @@ class IdentificacionViewModel(
         val imagen = withContext(Dispatchers.Default) {
             Fotos.cargarParaAnalisis(contexto, uri)
         }
+
+        // La respuesta en linea cubre objetos cotidianos que ImageNet no
+        // contiene. Solo se llama despues del consentimiento que aparece en
+        // la camara. Un fallo de red nunca impide obtener el resultado local.
+        val pistaEnLinea = if (imagen != null && PreferenciasIA.usarEnLinea(contexto)) {
+            try {
+                withTimeoutOrNull(LIMITE_IA_EN_LINEA_MS) {
+                    obtenerReconocedorEnLinea().analizar(imagen)
+                }
+            } catch (e: Throwable) {
+                Log.w(ETIQUETA, "No se pudo usar Firebase AI; se usara el modelo local", e)
+                null
+            }
+        } else {
+            null
+        }
+
+        val pistasLocales = if (imagen == null) emptyList() else try {
+            withContext(Dispatchers.Default) { obtenerClasificador().analizar(imagen) }
+        } catch (e: Throwable) {
+            Log.w(ETIQUETA, "No se pudo obtener el reconocimiento local", e)
+            emptyList()
+        }
+        val pistas = buildList {
+            pistaEnLinea?.let(::add)
+            addAll(
+                pistasLocales.filterNot { local ->
+                    pistaEnLinea?.etiqueta.equals(local.etiqueta, ignoreCase = true)
+                }
+            )
+        }
+
+        // --- Paso 4: comparar la forma con el catalogo ---
+        _estado.value = EstadoIdentificacion.Analizando(PasoAnalisis.COMPARANDO)
 
         val parecidas = if (imagen == null) emptyList() else withContext(Dispatchers.Default) {
             val vector = obtenerEmbebedor().vector(imagen)
@@ -234,18 +274,6 @@ class IdentificacionViewModel(
                 textoLeido = texto
             )
             return
-        }
-
-        // --- Paso 4: pista generica ---
-        // La pieza no se reconoce. Antes de rendirse se pregunta al modelo
-        // generico que tipo de objeto ve, para poder acotar el catalogo a una
-        // familia y que la persona elija entre pocas piezas en vez de cientos.
-        // Si esto falla no importa: es una ayuda, no un requisito.
-        val pistas = if (imagen == null) emptyList() else try {
-            withContext(Dispatchers.Default) { obtenerClasificador().analizar(imagen) }
-        } catch (e: Throwable) {
-            Log.w(ETIQUETA, "No se pudo obtener la pista generica", e)
-            emptyList()
         }
 
         _estado.value = if (parecidas.isNotEmpty()) {
@@ -366,6 +394,9 @@ class IdentificacionViewModel(
          * cancelarlo prematuramente sin permitir una espera infinita.
          */
         private const val LIMITE_ANALISIS_MS = 60_000L
+
+        /** La red no debe dejar la pantalla esperando: despues entra el modelo local. */
+        private const val LIMITE_IA_EN_LINEA_MS = 15_000L
 
         /** Una lectura correcta del numero de parte no deja lugar a dudas. */
         const val CONFIANZA_OCR = 0.99f

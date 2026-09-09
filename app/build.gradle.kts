@@ -8,13 +8,22 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// El proyecto sigue compilando sin credenciales para que las cuentas locales
+// sirvan en la demostracion. Al colocar app/google-services.json se activa
+// automaticamente Firebase y aparecen registro y verificacion por correo.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.identificador.industrial"
     // Las librerias de Compose del BOM 2026.08 exigen compilar contra API 37.
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.identificador.industrial"
+        // Identificador distinto: esta copia se instala junto a la original y
+        // se registra como una app separada en el Firebase del propietario.
+        applicationId = "com.identificador.industrial.control"
         minSdk = 26
         // targetSdk se deja en 36 a proposito: compilar contra 37 permite usar
         // las APIs nuevas, pero subir targetSdk activa cambios de comportamiento
@@ -115,5 +124,11 @@ dependencies {
     implementation(libs.mlkit.text.recognition)
     implementation(libs.mediapipe.tasks.vision)
 
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.ai)
+
+    testImplementation(libs.junit)
     debugImplementation(libs.androidx.ui.tooling)
 }

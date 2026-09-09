@@ -17,6 +17,11 @@ mlkitEtiquetas = "17.0.9"
 # MediaPipe Tasks ejecuta el modelo MobileNet sobre el runtime de TensorFlow
 # Lite (LiteRT) y aporta la tarea de "image embedder" ya montada.
 mediapipe = "1.0.0"
+# Firebase se usa solo para cuentas creadas con correo. Las cuentas locales de
+# demostracion siguen disponibles para trabajar sin Internet.
+firebaseBom = "34.18.0"
+googleServices = "4.5.0"
+junit = "4.13.2"
 # KSP 2.3.x ya no lleva prefijo de version de Kotlin. AGP 9 exige 2.3.1 o superior.
 ksp = "2.3.9"
 
@@ -56,8 +61,15 @@ mlkit-image-labeling = { group = "com.google.mlkit", name = "image-labeling", ve
 
 mediapipe-tasks-vision = { group = "com.google.mediapipe", name = "tasks-vision", version.ref = "mediapipe" }
 
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
+firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
+firebase-ai = { group = "com.google.firebase", name = "firebase-ai" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 # No se declara 'org.jetbrains.kotlin.android': AGP 9 ya trae Kotlin integrado.
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

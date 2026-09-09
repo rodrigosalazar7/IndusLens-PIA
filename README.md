@@ -1,5 +1,11 @@
 # IndusLens · Identificador industrial inteligente
 
+> Esta es la copia **IndusLens-Control**. Agrega una base Firebase nueva bajo
+> la cuenta del propietario siguiendo
+> [`docs/CONTROL_DE_LA_BASE.md`](docs/CONTROL_DE_LA_BASE.md).
+> Su identificador Android es `com.identificador.industrial.control`, por lo
+> que puede instalarse junto a la aplicacion original sin reemplazarla.
+
 Aplicacion Android que identifica piezas y componentes industriales a partir de
 una fotografia, y muestra su informacion y su ubicacion dentro del almacen.
 
@@ -50,8 +56,10 @@ Tambien se pueden probar imagenes sin camara:
 3. En la pantalla de camara pulsa **Abrir imagen**.
 4. Abre el menu lateral del selector, entra a **Downloads** y elige el archivo.
 
-El selector tambien acepta Fotos y otros proveedores de archivos. Todo el
-procesamiento es local: seleccionar una imagen no la sube a Internet.
+El selector tambien acepta Fotos y otros proveedores de archivos. La primera
+vez, la app pregunta si puede enviar a Firebase AI Logic solamente el recorte
+central para obtener una identificacion general mas precisa. Si no se acepta o
+no hay Internet, el procesamiento continua con el modelo local incluido.
 
 ### Compilar desde la consola
 
@@ -80,18 +88,23 @@ Para instalarlo en un telefono conectado por USB:
 
 Solo el administrador ve habilitada la pantalla de administracion de materiales.
 
+Tambien se pueden crear cuentas con correo. El enlace de verificacion se envia
+con Firebase Authentication y la app no permite entrar hasta que el correo se
+confirma. La configuracion inicial esta en
+[`docs/CONFIGURAR_FIREBASE.md`](docs/CONFIGURAR_FIREBASE.md).
+
 ---
 
 ## Estado del proyecto
 
 | Fase | Contenido | Estado |
 |------|-----------|--------|
-| 1 | Estructura del proyecto, tema visual, navegacion, login y menu | **Terminada, compila y genera APK** |
+| 1 | Estructura, navegacion, login, sesion persistente y verificacion por correo | **Terminada** |
 | 2 | Base de datos Room, modelo de materiales y catalogo de ejemplo | **Terminada y verificada** |
 | 3 | CameraX + OCR con ML Kit, busqueda por numero de parte | **Terminada y verificada** |
 | 4 | TensorFlow Lite, embeddings y busqueda por similitud visual | **Terminada y verificada** |
 | 5 | Ubicacion en almacen, historial y alta de materiales | **Terminada y verificada** |
-| 6 | Compilacion del APK firmado | Pendiente |
+| 6 | Compilacion del APK instalable de demostracion | **Terminada** |
 
 Las pantallas que aun no tienen logica se pueden abrir y recorrer: muestran que
 va a contener cada una y en que fase se construye.
@@ -262,11 +275,11 @@ pero no significan nada.
 
 Si no hay numero legible ni huella parecida, la app no se rinde:
 
-1. Un modelo generico (EfficientNet-Lite entrenado con ImageNet) dice **que
-   tipo de objeto ve**: tornillo, cadena, martillo. Con una fotografia real de
-   un tornillo acierta con soltura; con rodamientos o contactores se pierde,
-   porque son objetos que apenas aparecen en las imagenes con las que se
-   entreno. Por eso se muestra como pista y nunca como identificacion.
+1. Con permiso de la persona y conexion, Firebase AI Logic analiza el recorte
+   central y devuelve un nombre y una familia general (por ejemplo, martillo,
+   herramienta o mango/fruta), sin inventar marca ni numero de parte. Si no
+   esta disponible, EfficientNet-Lite hace la misma tarea de forma local con
+   menor cobertura de objetos.
 2. Se ofrece el catalogo, filtrado por esa familia cuando la pista sirve, para
    que la persona **senale cual es**.
 3. Al senalarla, la fotografia se guarda como vista de referencia de esa pieza.
@@ -338,6 +351,8 @@ dice con todas las letras y pide confirmar el numero de parte. Un rodamiento
 | OCR | ML Kit Text Recognition 16.0.1 (modelo empaquetado, funciona sin red) |
 | Vision | MobileNet v3 (huellas) y EfficientNet-Lite (tipo de objeto), sobre TensorFlow Lite via MediaPipe Tasks 1.0.0 |
 | Base de datos | Room 2.8.4 sobre SQLite, preparada para Supabase |
+| Autenticacion | Local con Room + Firebase Auth para correo verificado |
+| Base central | Cloud Firestore con reglas por rol y cache Room sin conexion |
 | Procesador de anotaciones | KSP 2.3.9 |
 | Procesamiento | Python, para generar los embeddings del catalogo *(fase 4)* |
 | Compilacion | AGP 9.3.0, Gradle 9.7.0, JDK 17 |
