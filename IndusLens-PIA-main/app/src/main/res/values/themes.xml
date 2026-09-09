@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema del sistema (splash / ventana). Los colores reales de la interfaz
+         los define Compose en ui/theme/Theme.kt. -->
+    <style name="Theme.IndusLens" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#071D2B</item>
+        <item name="android:navigationBarColor">#071D2B</item>
+        <item name="android:windowBackground">#071D2B</item>
+    </style>
+</resources>

@@ -1,0 +1,73 @@
+[versions]
+agp = "9.3.0"
+kotlin = "2.4.10"
+coreKtx = "1.19.0"
+lifecycle = "2.11.0"
+activityCompose = "1.13.0"
+composeBom = "2026.08.00"
+navigation = "2.9.8"
+room = "2.8.4"
+camerax = "1.6.1"
+# Version "bundled": el modelo de OCR viaja dentro del APK, asi que funciona
+# sin conexion y sin depender de los Servicios de Google Play.
+mlkitTexto = "16.0.1"
+# Etiquetado generico de imagenes: no sabe de numeros de parte, pero si de
+# formas comunes ("tornillo", "cadena", "herramienta"). Sirve de pista.
+mlkitEtiquetas = "17.0.9"
+# MediaPipe Tasks ejecuta el modelo MobileNet sobre el runtime de TensorFlow
+# Lite (LiteRT) y aporta la tarea de "image embedder" ya montada.
+mediapipe = "1.0.0"
+# Firebase se usa solo para cuentas creadas con correo. Las cuentas locales de
+# demostracion siguen disponibles para trabajar sin Internet.
+firebaseBom = "34.18.0"
+googleServices = "4.5.0"
+junit = "4.13.2"
+# KSP 2.3.x ya no lleva prefijo de version de Kotlin. AGP 9 exige 2.3.1 o superior.
+ksp = "2.3.9"
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+# Aporta collectAsStateWithLifecycle: deja de observar los Flow cuando la
+# pantalla pasa a segundo plano, en lugar de seguir consumiendo recursos.
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+
+# El BOM fija automaticamente las versiones de todas las librerias de Compose,
+# por eso las de abajo se declaran sin version.
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+# Material 3 ya no arrastra los iconos, hay que pedirlos aparte.
+androidx-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }
+
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
+
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+
+androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
+androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
+
+mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTexto" }
+mlkit-image-labeling = { group = "com.google.mlkit", name = "image-labeling", version.ref = "mlkitEtiquetas" }
+
+mediapipe-tasks-vision = { group = "com.google.mediapipe", name = "tasks-vision", version.ref = "mediapipe" }
+
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+# No se declara 'org.jetbrains.kotlin.android': AGP 9 ya trae Kotlin integrado.
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
