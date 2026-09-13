@@ -372,8 +372,6 @@ class IdentificacionViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        // El lector es propio de este ViewModel y se cierra. El embebedor no:
-        // pertenece a la aplicacion y lo comparten otras pantallas.
         // El lector es propio de este ViewModel. El embebedor y el clasificador
         // no: pertenecen a la aplicacion y los comparten otras pantallas.
         lector.cerrar()
