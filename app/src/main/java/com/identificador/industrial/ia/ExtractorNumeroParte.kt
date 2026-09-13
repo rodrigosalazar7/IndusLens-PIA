@@ -32,6 +32,15 @@ object ExtractorNumeroParte {
         "MODEL", "MODELO", "SERIE", "SERIAL", "REV", "DATE", "FECHA"
     )
 
+    /**
+     * Pares de caracteres que el OCR confunde con frecuencia al leer texto
+     * grabado en metal (poco contraste, fuente estrecha). Se generan lecturas
+     * alternativas sustituyendo cada miembro del par por el otro, para que un
+     * "0" leido donde va una "O" (o viceversa) no impida el match contra el
+     * catalogo.
+     */
+    private val CONFUSIONES = listOf('0' to 'O', '1' to 'I', '5' to 'S', '8' to 'B', '2' to 'Z')
+
     fun candidatos(textoOcr: String): List<String> {
         if (textoOcr.isBlank()) return emptyList()
 
@@ -47,15 +56,44 @@ object ExtractorNumeroParte {
                 if (esCandidato(palabra)) encontrados += palabra
             }
 
-            // Uniones de palabras contiguas, para los numeros que el OCR partio.
+            // Uniones de palabras contiguas, para los numeros que el OCR partio
+            // en dos o en tres trozos.
             for (i in 0 until palabras.size - 1) {
-                val unido = palabras[i] + palabras[i + 1]
-                if (esCandidato(unido)) encontrados += unido
+                val dos = palabras[i] + palabras[i + 1]
+                if (esCandidato(dos)) encontrados += dos
+
+                if (i < palabras.size - 2) {
+                    val tres = dos + palabras[i + 2]
+                    if (esCandidato(tres)) encontrados += tres
+                }
+            }
+        }
+
+        // Lecturas alternativas por confusiones tipicas del OCR, sobre los
+        // candidatos ya encontrados.
+        encontrados.toList().forEach { candidato ->
+            variantesPorConfusion(candidato).forEach { variante ->
+                if (esCandidato(variante)) encontrados += variante
             }
         }
 
         return encontrados.sortedWith(porEspecificidad)
     }
+
+    /**
+     * Sustituye, un par a la vez, todas las apariciones de cada caracter
+     * confundible por su contraparte. No se combinan varias sustituciones a
+     * la vez a proposito: con varios caracteres ambiguos en un mismo texto el
+     * numero de combinaciones crece exponencialmente y la mayoria no aportan
+     * nada, porque el OCR rara vez confunde mas de un caracter por lectura.
+     */
+    private fun variantesPorConfusion(candidato: String): List<String> =
+        CONFUSIONES.flatMap { (a, b) ->
+            listOfNotNull(
+                candidato.replace(a, b).takeIf { it != candidato && a in candidato },
+                candidato.replace(b, a).takeIf { it != candidato && b in candidato }
+            )
+        }
 
     /**
      * Se prueban primero los candidatos mas especificos.
