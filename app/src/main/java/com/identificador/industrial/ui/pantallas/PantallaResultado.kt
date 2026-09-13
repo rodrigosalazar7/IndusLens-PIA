@@ -53,6 +53,7 @@ fun PantallaResultado(
     onVerSimilares: () -> Unit,
     onRepetirFoto: () -> Unit,
     onElegirPieza: () -> Unit,
+    onEsPiezaNueva: () -> Unit,
     onMedir: () -> Unit
 ) {
     val estado by identificacion.estado.collectAsStateWithLifecycle()
@@ -84,7 +85,8 @@ fun PantallaResultado(
                     pistas = actual.pistas,
                     onVerSimilares = onVerSimilares,
                     onRepetirFoto = onRepetirFoto,
-                    onElegirPieza = onElegirPieza
+                    onElegirPieza = onElegirPieza,
+                    onEsPiezaNueva = onEsPiezaNueva
                 )
 
                 is EstadoIdentificacion.NoIdentificado -> SinAcierto(
@@ -92,7 +94,8 @@ fun PantallaResultado(
                     textoLeido = actual.textoLeido,
                     pistas = actual.pistas,
                     onRepetirFoto = onRepetirFoto,
-                    onElegirPieza = onElegirPieza
+                    onElegirPieza = onElegirPieza,
+                    onEsPiezaNueva = onEsPiezaNueva
                 )
 
                 is EstadoIdentificacion.Fallo -> Aviso(
@@ -266,7 +269,8 @@ private fun HayParecidas(
     pistas: List<Pista>,
     onVerSimilares: () -> Unit,
     onRepetirFoto: () -> Unit,
-    onElegirPieza: () -> Unit
+    onElegirPieza: () -> Unit,
+    onEsPiezaNueva: () -> Unit
 ) {
     val objetoReconocido = pistas.firstOrNull()
 
@@ -324,6 +328,18 @@ private fun HayParecidas(
             .height(50.dp)
     ) {
         Text("Decirle yo que pieza es")
+    }
+
+    // No esta en el catalogo, pero la foto ya sirve como su primera huella:
+    // se guarda al dar de alta, sin tener que repetirla.
+    OutlinedButton(
+        onClick = onEsPiezaNueva,
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp)
+    ) {
+        Text("No esta en el catalogo, darla de alta")
     }
 
     OutlinedButton(
@@ -409,7 +425,8 @@ private fun SinAcierto(
     textoLeido: String,
     pistas: List<Pista>,
     onRepetirFoto: () -> Unit,
-    onElegirPieza: () -> Unit
+    onElegirPieza: () -> Unit,
+    onEsPiezaNueva: () -> Unit
 ) {
     val objetoReconocido = pistas.firstOrNull()
 
@@ -488,6 +505,20 @@ private fun SinAcierto(
             .height(52.dp)
     ) {
         Text("Decirle yo que pieza es", style = MaterialTheme.typography.labelLarge)
+    }
+
+    // Cuando la pieza sencillamente no esta en el catalogo (por ejemplo, una
+    // herramienta que la IA general si reconoce pero que nadie ha dado de
+    // alta), esta es la salida: se registra y la foto que ya se tomo queda
+    // como su primera huella, sin repetirla.
+    OutlinedButton(
+        onClick = onEsPiezaNueva,
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp)
+    ) {
+        Text("No esta en el catalogo, darla de alta")
     }
 
     OutlinedButton(

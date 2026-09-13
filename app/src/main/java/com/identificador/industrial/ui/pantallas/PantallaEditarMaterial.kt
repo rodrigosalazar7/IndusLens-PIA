@@ -48,15 +48,19 @@ import com.identificador.industrial.ui.componentes.PantallaBase
 fun PantallaEditarMaterial(
     materialId: String?,
     onVolver: () -> Unit,
-    onGuardado: () -> Unit
+    onGuardado: (String) -> Unit,
+    sugerenciaNombre: String? = null,
+    sugerenciaCategoria: Categoria? = null
 ) {
     val vm: EdicionViewModel = viewModel(factory = Fabricas.Edicion)
-    LaunchedEffect(materialId) { vm.cargar(materialId) }
+    LaunchedEffect(materialId) { vm.cargar(materialId, sugerenciaNombre, sugerenciaCategoria) }
 
     val f = vm.formulario
     var confirmarBaja by remember { mutableStateOf(false) }
 
-    LaunchedEffect(vm.terminado) { if (vm.terminado) onGuardado() }
+    LaunchedEffect(vm.terminado) {
+        if (vm.terminado) vm.idGuardado?.let(onGuardado)
+    }
 
     PantallaBase(
         titulo = if (f.esNuevo) "Nuevo material" else "Editar material",
