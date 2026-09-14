@@ -60,6 +60,9 @@ interface MaterialDao {
     @Query("SELECT id FROM materiales")
     suspend fun todosLosIds(): List<String>
 
+    @Query("SELECT * FROM materiales ORDER BY id")
+    suspend fun obtenerTodosIncluyendoInactivos(): List<Material>
+
     /**
      * Pasillos que existen de verdad en un almacen, segun lo que hay guardado.
      * El plano de la pantalla de ubicacion se dibuja con esto, no con una

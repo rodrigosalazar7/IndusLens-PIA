@@ -5,9 +5,13 @@ import com.identificador.industrial.datos.RepositorioBusquedas
 import com.identificador.industrial.datos.RepositorioMateriales
 import com.identificador.industrial.datos.RepositorioUsuarios
 import com.identificador.industrial.datos.RepositorioVisual
+import com.identificador.industrial.datos.BaseRemota
 import com.identificador.industrial.datos.local.BaseDatos
 import com.identificador.industrial.ia.ClasificadorGenerico
 import com.identificador.industrial.ia.Embebedor
+import com.identificador.industrial.ia.ReconocedorEnLinea
+import com.identificador.industrial.sesion.AutenticacionCorreo
+import com.identificador.industrial.sesion.SesionPersistida
 
 /**
  * Contenedor de dependencias de la app.
@@ -23,9 +27,17 @@ class AplicacionIdentificador : Application() {
 
     private val baseDatos by lazy { BaseDatos.obtener(this) }
 
-    val repositorioMateriales by lazy { RepositorioMateriales(baseDatos.materialDao()) }
+    val baseRemota by lazy { BaseRemota(this) }
+
+    val repositorioMateriales by lazy {
+        RepositorioMateriales(baseDatos.materialDao(), baseRemota)
+    }
 
     val repositorioUsuarios by lazy { RepositorioUsuarios(baseDatos.usuarioDao()) }
+
+    val autenticacionCorreo by lazy { AutenticacionCorreo(this, baseRemota) }
+
+    val sesionPersistida by lazy { SesionPersistida(this) }
 
     val repositorioBusquedas by lazy { RepositorioBusquedas(baseDatos.busquedaDao()) }
 
@@ -44,4 +56,7 @@ class AplicacionIdentificador : Application() {
 
     /** Modelo generico que dice que tipo de objeto ve. Tambien bajo demanda. */
     val clasificador by lazy { ClasificadorGenerico(this) }
+
+    /** Complemento en linea para objetos que no estan en las mil clases locales. */
+    val reconocedorEnLinea by lazy { ReconocedorEnLinea(this) }
 }

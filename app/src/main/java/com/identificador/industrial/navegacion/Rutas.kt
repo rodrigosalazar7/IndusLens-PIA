@@ -52,9 +52,14 @@ object Rutas {
     const val MEDIR = "medir"
 
     // Alta y edicion de materiales. Sin argumento, es un alta.
-    const val EDITAR = "editar?materialId={materialId}"
-    fun editar(materialId: String? = null) =
-        if (materialId == null) "editar?materialId=" else "editar?materialId=$materialId"
+    //
+    // "aprender" distingue el alta que nace de una identificacion fallida: en
+    // ese caso, al guardar el material nuevo se le ensena de inmediato la foto
+    // que ya se tenia, para no obligar a repetirla.
+    const val EDITAR = "editar?materialId={materialId}&aprender={aprender}"
+    fun editar(materialId: String? = null, aprenderFoto: Boolean = false) =
+        "editar?materialId=${materialId.orEmpty()}&aprender=$aprenderFoto"
 
     const val ARG_MATERIAL_ID = "materialId"
+    const val ARG_APRENDER = "aprender"
 }

@@ -2,16 +2,29 @@ package com.identificador.industrial.datos
 
 import com.identificador.industrial.datos.local.MaterialDao
 import com.identificador.industrial.datos.modelo.Material
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 /**
  * Unico punto de acceso al catalogo desde la interfaz.
  *
- * La interfaz nunca habla con el DAO directamente. Esa separacion es la que
- * permitira, en su momento, cambiar el origen de los datos por Supabase sin
- * tocar una sola pantalla: bastaria con otra implementacion de esta clase.
+ * La interfaz nunca habla con el DAO ni con Firestore directamente. Room es
+ * la cache sin conexion y BaseRemota es la fuente compartida cuando hay una
+ * cuenta verificada.
  */
-class RepositorioMateriales(private val dao: MaterialDao) {
+class RepositorioMateriales(
+    private val dao: MaterialDao,
+    private val baseRemota: BaseRemota? = null
+) {
+
+    private val alcanceSincronizacion = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var trabajoSincronizacion: Job? = null
 
     fun observarTodos(): Flow<List<Material>> = dao.observarTodos()
 
@@ -30,11 +43,19 @@ class RepositorioMateriales(private val dao: MaterialDao) {
     suspend fun buscarPorNumeroParte(numeroParte: String): Material? =
         dao.buscarPorNumeroParte(Material.normalizarNumeroParte(numeroParte))
 
-    suspend fun guardar(material: Material) = dao.insertar(material)
+    suspend fun guardar(material: Material) {
+        // Para una cuenta Firebase, Firestore manda. Si las reglas rechazan
+        // el cambio, tampoco se altera la cache y la app muestra el error.
+        if (baseRemota?.sesionRemotaActiva == true) baseRemota.guardar(material)
+        dao.insertar(material)
+    }
 
-    suspend fun actualizar(material: Material) = dao.actualizar(material)
+    suspend fun actualizar(material: Material) = guardar(material)
 
-    suspend fun eliminar(material: Material) = dao.eliminar(material)
+    suspend fun eliminar(material: Material) {
+        if (baseRemota?.sesionRemotaActiva == true) baseRemota.eliminar(material.id)
+        dao.eliminar(material)
+    }
 
     suspend fun contar(): Int = dao.contar()
 
@@ -64,4 +85,36 @@ class RepositorioMateriales(private val dao: MaterialDao) {
         rack: String,
         excluir: String
     ): List<Material> = dao.vecinosDeRack(almacen, pasillo, rack, excluir)
+
+    /**
+     * Conecta la cache Room con la base central despues de iniciar sesion.
+     *
+     * Si la coleccion es nueva y quien entra es administrador, publica el
+     * catalogo semilla una sola vez. Despues escucha los cambios en vivo.
+     */
+    suspend fun conectarBaseRemota(esAdministrador: Boolean) {
+        val remota = baseRemota ?: return
+        if (!remota.sesionRemotaActiva) return
+
+        val materialesRemotos = remota.obtenerMateriales()
+        if (materialesRemotos.isEmpty() && esAdministrador) {
+            remota.guardarTodos(dao.obtenerTodosIncluyendoInactivos())
+        } else if (materialesRemotos.isNotEmpty()) {
+            dao.insertarTodos(materialesRemotos)
+        }
+
+        trabajoSincronizacion?.cancel()
+        trabajoSincronizacion = alcanceSincronizacion.launch {
+            remota.observarMateriales()
+                .catch { /* La cache local mantiene la app util sin red. */ }
+                .collectLatest { materiales ->
+                    if (materiales.isNotEmpty()) dao.insertarTodos(materiales)
+                }
+        }
+    }
+
+    fun desconectarBaseRemota() {
+        trabajoSincronizacion?.cancel()
+        trabajoSincronizacion = null
+    }
 }

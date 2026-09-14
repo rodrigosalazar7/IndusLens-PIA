@@ -134,6 +134,14 @@ private fun CabeceraUsuario(usuario: Usuario) {
                 texto = usuario.rol.etiqueta,
                 color = MaterialTheme.colorScheme.secondary
             )
+            if (usuario.remoto) {
+                Spacer(Modifier.height(5.dp))
+                Text(
+                    text = "Cuenta verificada - catalogo central",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

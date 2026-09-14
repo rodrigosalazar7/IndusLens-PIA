@@ -1,6 +1,8 @@
 package com.identificador.industrial.navegacion
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -10,6 +12,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.identificador.industrial.sesion.SesionViewModel
 import com.identificador.industrial.ui.Fabricas
+import com.identificador.industrial.ui.pantallas.EstadoIdentificacion
 import com.identificador.industrial.ui.pantallas.PantallaAdmin
 import com.identificador.industrial.ui.pantallas.PantallaCamara
 import com.identificador.industrial.ui.pantallas.PantallaDetalle
@@ -35,6 +38,7 @@ import com.identificador.industrial.ui.pantallas.PantallaUbicacion
 @Composable
 fun NavegacionApp() {
     val navController = rememberNavController()
+    val contexto = LocalContext.current
     val sesion: SesionViewModel = viewModel(factory = Fabricas.Sesion)
 
     // Se crea aqui, fuera del NavHost, para que la foto y su resultado
@@ -81,7 +85,7 @@ fun NavegacionApp() {
         composable(Rutas.CAMARA) {
             PantallaCamara(
                 titulo = "Identificar pieza",
-                textoGuia = "Encuadra la pieza y acerca el numero de parte",
+                textoGuia = "Centra el objeto completo dentro del cuadro",
                 onVolver = { navController.popBackStack() },
                 onFotoTomada = { uri ->
                     identificacion.registrarFoto(uri)
@@ -120,6 +124,9 @@ fun NavegacionApp() {
                     }
                 },
                 onElegirPieza = { navController.navigate(Rutas.ELEGIR) },
+                onEsPiezaNueva = {
+                    navController.navigate(Rutas.editar(materialId = null, aprenderFoto = true))
+                },
                 onMedir = { navController.navigate(Rutas.MEDIR) }
             )
         }
@@ -228,14 +235,49 @@ fun NavegacionApp() {
                 navArgument(Rutas.ARG_MATERIAL_ID) {
                     type = NavType.StringType
                     defaultValue = ""
+                },
+                navArgument(Rutas.ARG_APRENDER) {
+                    type = NavType.BoolType
+                    defaultValue = false
                 }
             )
         ) { entrada ->
             val materialId = entrada.arguments?.getString(Rutas.ARG_MATERIAL_ID).orEmpty()
+            val aprenderFoto = entrada.arguments?.getBoolean(Rutas.ARG_APRENDER) ?: false
+
+            // Solo tiene sentido cuando el alta nace de una identificacion sin
+            // acierto: es ahi donde la IA generica pudo adivinar de que tipo de
+            // objeto se trata.
+            val pistas = if (aprenderFoto) {
+                when (val actual = identificacion.estado.collectAsStateWithLifecycle().value) {
+                    is EstadoIdentificacion.NoIdentificado -> actual.pistas
+                    is EstadoIdentificacion.Similares -> actual.pistas
+                    else -> emptyList()
+                }
+            } else {
+                emptyList()
+            }
+            val pistaPrincipal = pistas.firstOrNull()
+
             PantallaEditarMaterial(
                 materialId = materialId.ifBlank { null },
+                sugerenciaNombre = pistaPrincipal?.etiqueta,
+                sugerenciaCategoria = pistaPrincipal?.categoria,
                 onVolver = { navController.popBackStack() },
-                onGuardado = { navController.popBackStack() }
+                onGuardado = { idGuardado ->
+                    if (aprenderFoto) {
+                        identificacion.confirmarPieza(
+                            contexto = contexto,
+                            materialId = idGuardado,
+                            usuarioId = sesion.usuarioActivo?.id.orEmpty()
+                        )
+                        // Vuelve hasta el resultado, saltandose la pantalla de
+                        // eleccion si se llego a traves de ella.
+                        navController.popBackStack(Rutas.RESULTADO, inclusive = false)
+                    } else {
+                        navController.popBackStack()
+                    }
+                }
             )
         }
     }

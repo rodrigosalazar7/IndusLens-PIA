@@ -3,6 +3,7 @@ package com.identificador.industrial.ui.pantallas
 import com.identificador.industrial.ui.theme.Espaciado
 import com.identificador.industrial.ui.theme.TamanosControles
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.identificador.industrial.datos.modelo.Categoria
+import com.identificador.industrial.datos.modelo.Ubicacion
 import com.identificador.industrial.ui.Fabricas
 import com.identificador.industrial.ui.componentes.PantallaBase
 
@@ -49,15 +51,19 @@ import com.identificador.industrial.ui.componentes.PantallaBase
 fun PantallaEditarMaterial(
     materialId: String?,
     onVolver: () -> Unit,
-    onGuardado: () -> Unit
+    onGuardado: (String) -> Unit,
+    sugerenciaNombre: String? = null,
+    sugerenciaCategoria: Categoria? = null
 ) {
     val vm: EdicionViewModel = viewModel(factory = Fabricas.Edicion)
-    LaunchedEffect(materialId) { vm.cargar(materialId) }
+    LaunchedEffect(materialId) { vm.cargar(materialId, sugerenciaNombre, sugerenciaCategoria) }
 
     val f = vm.formulario
     var confirmarBaja by remember { mutableStateOf(false) }
 
-    LaunchedEffect(vm.terminado) { if (vm.terminado) onGuardado() }
+    LaunchedEffect(vm.terminado) {
+        if (vm.terminado) vm.idGuardado?.let(onGuardado)
+    }
 
     PantallaBase(
         titulo = if (f.esNuevo) "Nuevo material" else "Editar material",
@@ -151,23 +157,60 @@ fun PantallaEditarMaterial(
             Campo("Unidad de medida", f.unidadMedida) { vm.actualizar(f.copy(unidadMedida = it)) }
 
             Seccion("Ubicacion en almacen")
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Campo("Almacen", f.almacen, modifier = Modifier.weight(1f)) {
-                    vm.actualizar(f.copy(almacen = it))
+
+            // Colapsada por defecto: los cinco campos ya traen un valor
+            // (el mismo material esta cargado, o el A-01-A-1-1 de un alta
+            // nueva), asi que mostrarlos siempre abiertos es ruido para quien
+            // solo quiere confirmar la pieza y guardar. Se expanden con un
+            // toque solo cuando hay que corregir la ubicacion de verdad.
+            var editandoUbicacion by remember { mutableStateOf(false) }
+
+            if (!editandoUbicacion) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = MaterialTheme.shapes.medium
+                        )
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = Ubicacion(
+                            almacen = f.almacen.ifBlank { "-" },
+                            pasillo = f.pasillo.ifBlank { "-" },
+                            rack = f.rack.ifBlank { "-" },
+                            nivel = f.nivel.toIntOrNull() ?: 0,
+                            posicion = f.posicion.toIntOrNull() ?: 0
+                        ).codigo,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    TextButton(onClick = { editandoUbicacion = true }) {
+                        Text("Cambiar")
+                    }
                 }
-                Campo("Pasillo", f.pasillo, modifier = Modifier.weight(1f)) {
-                    vm.actualizar(f.copy(pasillo = it))
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Campo("Almacen", f.almacen, modifier = Modifier.weight(1f)) {
+                        vm.actualizar(f.copy(almacen = it))
+                    }
+                    Campo("Pasillo", f.pasillo, modifier = Modifier.weight(1f)) {
+                        vm.actualizar(f.copy(pasillo = it))
+                    }
+                    Campo("Rack", f.rack, modifier = Modifier.weight(1f)) {
+                        vm.actualizar(f.copy(rack = it))
+                    }
                 }
-                Campo("Rack", f.rack, modifier = Modifier.weight(1f)) {
-                    vm.actualizar(f.copy(rack = it))
-                }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Campo("Nivel", f.nivel, numerico = true, modifier = Modifier.weight(1f)) {
-                    vm.actualizar(f.copy(nivel = it))
-                }
-                Campo("Posicion", f.posicion, numerico = true, modifier = Modifier.weight(1f)) {
-                    vm.actualizar(f.copy(posicion = it))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Campo("Nivel", f.nivel, numerico = true, modifier = Modifier.weight(1f)) {
+                        vm.actualizar(f.copy(nivel = it))
+                    }
+                    Campo("Posicion", f.posicion, numerico = true, modifier = Modifier.weight(1f)) {
+                        vm.actualizar(f.copy(posicion = it))
+                    }
                 }
             }
 

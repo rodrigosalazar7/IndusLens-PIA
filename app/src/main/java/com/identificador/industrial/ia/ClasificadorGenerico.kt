@@ -8,12 +8,19 @@ import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.imageclassifier.ImageClassifier
 import com.identificador.industrial.datos.modelo.Categoria
 
-/** Lo que el modelo generico cree ver en la foto. */
+enum class OrigenPista {
+    MODELO_LOCAL,
+    FIREBASE_AI
+}
+
+/** Lo que un modelo visual cree ver en la foto. */
 data class Pista(
     val etiqueta: String,
     val confianza: Float,
     /** Familia del catalogo a la que apunta, si se pudo deducir. */
-    val categoria: Categoria?
+    val categoria: Categoria?,
+    /** Permite explicar si la respuesta salio del telefono o de la IA en linea. */
+    val origen: OrigenPista = OrigenPista.MODELO_LOCAL
 )
 
 /**
@@ -128,6 +135,9 @@ class ClasificadorGenerico(contexto: Context) {
             "hammer" to Categoria.HERRAMIENTA,
             "screwdriver" to Categoria.HERRAMIENTA,
             "power drill" to Categoria.HERRAMIENTA,
+            "tool" to Categoria.HERRAMIENTA,
+            "wrench" to Categoria.HERRAMIENTA,
+            "pliers" to Categoria.HERRAMIENTA,
             "plunger" to Categoria.HERRAMIENTA,
             "hatchet" to Categoria.HERRAMIENTA,
             "switch" to Categoria.ELECTRICO,
@@ -174,6 +184,18 @@ class ClasificadorGenerico(contexto: Context) {
             "can opener" to "abrelatas",
             "corkscrew" to "sacacorchos",
             "wrench" to "llave",
+            "tool" to "herramienta",
+            "pliers" to "pinzas",
+            "mango" to "mango",
+            "banana" to "platano",
+            "lemon" to "limon",
+            "orange" to "naranja",
+            "pineapple" to "pina",
+            "pomegranate" to "granada",
+            "strawberry" to "fresa",
+            "fig" to "higo",
+            "jackfruit" to "yaca",
+            "custard apple" to "anon",
             "matchstick" to "cerilla",
             "pencil sharpener" to "sacapuntas",
             "rubber eraser" to "goma",

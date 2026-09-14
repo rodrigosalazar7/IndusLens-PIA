@@ -58,13 +58,35 @@ class EdicionViewModel(
     var terminado by mutableStateOf(false)
         private set
 
+    /** Id con el que quedo guardado el material, para ensenarle una foto de inmediato. */
+    var idGuardado: String? = null
+        private set
+
     private var cargado = false
 
-    fun cargar(materialId: String?) {
+    /**
+     * `sugerenciaNombre` y `sugerenciaCategoria` prellenan el alta cuando esta
+     * nace de una foto que la IA generica ya supo describir (por ejemplo
+     * "martillo"): ahorran escribir lo que la app ya cree saber, sin impedir
+     * corregirlo.
+     */
+    fun cargar(
+        materialId: String?,
+        sugerenciaNombre: String? = null,
+        sugerenciaCategoria: Categoria? = null
+    ) {
         if (cargado) return
         cargado = true
 
-        if (materialId.isNullOrBlank()) return
+        if (materialId.isNullOrBlank()) {
+            if (sugerenciaNombre != null || sugerenciaCategoria != null) {
+                formulario = formulario.copy(
+                    nombre = sugerenciaNombre?.replaceFirstChar { it.uppercase() }.orEmpty(),
+                    categoria = sugerenciaCategoria ?: formulario.categoria
+                )
+            }
+            return
+        }
 
         viewModelScope.launch {
             val m = repositorio.obtenerPorId(materialId) ?: return@launch
@@ -140,6 +162,7 @@ class EdicionViewModel(
                 )
 
                 repositorio.guardar(material)
+                idGuardado = material.id
                 terminado = true
             } catch (e: Exception) {
                 error = e.message ?: "No se pudo guardar el material"
@@ -166,6 +189,7 @@ class EdicionViewModel(
                     repositorio.actualizar(material.copy(activo = false))
                     repositorioVisual.borrarHuellas(id)
                 }
+                idGuardado = id
                 terminado = true
             } catch (e: Exception) {
                 error = e.message ?: "No se pudo dar de baja el material"

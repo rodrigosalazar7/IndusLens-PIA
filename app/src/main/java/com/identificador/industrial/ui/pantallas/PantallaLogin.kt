@@ -1,10 +1,13 @@
 package com.identificador.industrial.ui.pantallas
 
-import com.identificador.industrial.ui.theme.Espaciado
-import com.identificador.industrial.ui.theme.TamanosControles
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.background
+import com.identificador.industrial.ui.theme.TamanosControles
+import com.identificador.industrial.ui.theme.Espaciado
+import com.identificador.industrial.ui.componentes.BotonSecundario
+import com.identificador.industrial.ui.componentes.CampoTexto
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +28,6 @@ import androidx.compose.material.icons.filled.Person
 import com.identificador.industrial.ui.componentes.BotonPrincipal
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import com.identificador.industrial.ui.componentes.CampoTexto
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -47,26 +49,51 @@ import androidx.compose.ui.unit.dp
 import com.identificador.industrial.R
 import com.identificador.industrial.sesion.SesionViewModel
 
-/** Pantalla 1: inicio de sesion. */
+private enum class ModoAcceso {
+    ENTRAR,
+    CREAR_CUENTA
+}
+
+/** Pantalla 1: acceso local y registro verificado por correo. */
 @Composable
 fun PantallaLogin(
     sesion: SesionViewModel,
     onLoginExitoso: () -> Unit
 ) {
-    var usuario by remember { mutableStateOf("") }
+    var modo by remember { mutableStateOf(ModoAcceso.ENTRAR) }
+    var identificador by remember { mutableStateOf("") }
+    var nombre by remember { mutableStateOf("") }
+    var correoRegistro by remember { mutableStateOf("") }
     var clave by remember { mutableStateOf("") }
+    var confirmacion by remember { mutableStateOf("") }
     var claveVisible by remember { mutableStateOf(false) }
 
     val teclado = LocalSoftwareKeyboardController.current
 
-    // Cuando el ViewModel confirma la sesion, se avisa al grafo de navegacion.
     LaunchedEffect(sesion.usuarioActivo) {
         if (sesion.usuarioActivo != null) onLoginExitoso()
     }
 
-    fun intentarEntrar() {
+    fun enviarFormulario() {
         teclado?.hide()
-        sesion.iniciarSesion(usuario, clave)
+        if (modo == ModoAcceso.ENTRAR) {
+            sesion.iniciarSesion(identificador, clave)
+        } else {
+            sesion.registrar(nombre, correoRegistro, clave, confirmacion)
+        }
+    }
+
+    fun cambiarModo() {
+        if (modo == ModoAcceso.CREAR_CUENTA) {
+            identificador = correoRegistro
+            modo = ModoAcceso.ENTRAR
+        } else {
+            correoRegistro = identificador.takeIf { '@' in it }.orEmpty()
+            modo = ModoAcceso.CREAR_CUENTA
+        }
+        clave = ""
+        confirmacion = ""
+        sesion.limpiarMensajes()
     }
 
     Box(
@@ -79,124 +106,272 @@ fun PantallaLogin(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
                 .widthIn(max = TamanosControles.anchoFormulario)
-                .padding(horizontal = 28.dp, vertical = 40.dp),
+                .padding(horizontal = 28.dp, vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             LogoIndusLens()
 
-            Spacer(Modifier.height(22.dp))
-
+            Spacer(Modifier.height(18.dp))
             Text(
                 text = "IndusLens",
                 style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center
+                color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "Identifica y localiza materiales con una foto",
+                text = if (modo == ModoAcceso.ENTRAR) {
+                    "Identifica y localiza materiales con una foto"
+                } else {
+                    "Crea una cuenta y confirma tu correo"
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(Modifier.height(36.dp))
+            Spacer(Modifier.height(28.dp))
+
+            if (modo == ModoAcceso.CREAR_CUENTA) {
+                CampoTexto(
+                    value = nombre,
+                    onValueChange = {
+                        nombre = it
+                        sesion.limpiarError()
+                    },
+                    label = { Text("Nombre") },
+                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                    singleLine = true,
+                    enabled = !sesion.cargando,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(12.dp))
+            }
 
             CampoTexto(
-                value = usuario,
+                value = if (modo == ModoAcceso.ENTRAR) identificador else correoRegistro,
                 onValueChange = {
-                    usuario = it
+                    if (modo == ModoAcceso.ENTRAR) identificador = it else correoRegistro = it
                     sesion.limpiarError()
                 },
-                label = { Text("Usuario") },
-                leadingIcon = {
-                    Icon(Icons.Default.Person, contentDescription = null)
+                label = {
+                    Text(if (modo == ModoAcceso.ENTRAR) "Correo o usuario" else "Correo")
                 },
+                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                 singleLine = true,
                 enabled = !sesion.cargando,
                 isError = sesion.error != null,
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
+                    keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
                 ),
                 shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
 
-            CampoTexto(
-                value = clave,
-                onValueChange = {
+            CampoClave(
+                valor = clave,
+                etiqueta = "Contrasena",
+                visible = claveVisible,
+                habilitado = !sesion.cargando,
+                esUltimo = modo == ModoAcceso.ENTRAR,
+                hayError = sesion.error != null,
+                onValorCambia = {
                     clave = it
                     sesion.limpiarError()
                 },
-                label = { Text("Contrasena") },
-                leadingIcon = {
-                    Icon(Icons.Default.Lock, contentDescription = null)
-                },
-                trailingIcon = {
-                    TextButton(onClick = { claveVisible = !claveVisible }) {
-                        Text(if (claveVisible) "Ocultar" else "Ver")
-                    }
-                },
-                visualTransformation = if (claveVisible) {
-                    VisualTransformation.None
-                } else {
-                    PasswordVisualTransformation()
-                },
-                singleLine = true,
-                enabled = !sesion.cargando,
-                isError = sesion.error != null,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(onDone = { intentarEntrar() }),
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.fillMaxWidth()
+                onAlternarVisibilidad = { claveVisible = !claveVisible },
+                onTerminar = { enviarFormulario() }
             )
 
-            // Se reserva la altura del mensaje de error para que el boton no
-            // brinque hacia abajo cuando aparece.
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 34.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                sesion.error?.let { mensaje ->
-                    Text(
-                        text = mensaje,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
+            if (modo == ModoAcceso.CREAR_CUENTA) {
+                Spacer(Modifier.height(12.dp))
+                CampoClave(
+                    valor = confirmacion,
+                    etiqueta = "Confirmar contrasena",
+                    visible = claveVisible,
+                    habilitado = !sesion.cargando,
+                    esUltimo = true,
+                    hayError = sesion.error != null,
+                    onValorCambia = {
+                        confirmacion = it
+                        sesion.limpiarError()
+                    },
+                    onAlternarVisibilidad = { claveVisible = !claveVisible },
+                    onTerminar = { enviarFormulario() }
+                )
             }
 
+            sesion.error?.let { mensaje ->
+                Spacer(Modifier.height(10.dp))
+                MensajeAcceso(mensaje, esError = true)
+            }
+            sesion.aviso?.let { mensaje ->
+                Spacer(Modifier.height(10.dp))
+                MensajeAcceso(mensaje, esError = false)
+            }
+
+            Spacer(Modifier.height(16.dp))
+
             BotonPrincipal(
-                onClick = { intentarEntrar() },
-                cargando = sesion.cargando,
+                onClick = { enviarFormulario() },
+                enabled = !sesion.cargando,
                 shape = MaterialTheme.shapes.medium,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = TamanosControles.alturaMinima)
             ) {
-                Text("Entrar", style = MaterialTheme.typography.labelLarge)
+                if (sesion.cargando) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(
+                        if (modo == ModoAcceso.ENTRAR) "Entrar" else "Crear cuenta",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
             }
 
-            Spacer(Modifier.height(28.dp))
+            if (sesion.correoPendiente != null) {
+                Spacer(Modifier.height(10.dp))
+                BotonSecundario(
+                    onClick = {
+                        val correo = sesion.correoPendiente.orEmpty()
+                        identificador = correo
+                        correoRegistro = correo
+                        sesion.iniciarSesion(correo, clave)
+                    },
+                    enabled = !sesion.cargando,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Ya verifique, entrar")
+                }
+                TextButton(
+                    onClick = {
+                        sesion.reenviarVerificacion(
+                            sesion.correoPendiente.orEmpty(),
+                            clave
+                        )
+                    },
+                    enabled = !sesion.cargando
+                ) {
+                    Text("Reenviar correo de verificacion")
+                }
+            }
 
-            AvisoCredencialesDemo()
+            if (modo == ModoAcceso.ENTRAR) {
+                TextButton(
+                    onClick = { sesion.enviarRestablecimiento(identificador) },
+                    enabled = !sesion.cargando
+                ) {
+                    Text("Olvide mi contrasena")
+                }
+            }
+
+            TextButton(onClick = { cambiarModo() }, enabled = !sesion.cargando) {
+                Text(
+                    if (modo == ModoAcceso.ENTRAR) {
+                        "Crear cuenta con correo"
+                    } else {
+                        "Ya tengo cuenta"
+                    }
+                )
+            }
+
+            if (modo == ModoAcceso.CREAR_CUENTA && !sesion.correoConfigurado) {
+                Text(
+                    text = "El registro se activa al conectar Firebase. " +
+                        "Las cuentas de prueba ya funcionan sin Internet.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            if (modo == ModoAcceso.ENTRAR) {
+                Spacer(Modifier.height(20.dp))
+                AvisoCredencialesDemo()
+            }
         }
     }
+}
+
+@Composable
+private fun CampoClave(
+    valor: String,
+    etiqueta: String,
+    visible: Boolean,
+    habilitado: Boolean,
+    esUltimo: Boolean,
+    hayError: Boolean,
+    onValorCambia: (String) -> Unit,
+    onAlternarVisibilidad: () -> Unit,
+    onTerminar: () -> Unit
+) {
+    CampoTexto(
+        value = valor,
+        onValueChange = onValorCambia,
+        label = { Text(etiqueta) },
+        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+        trailingIcon = {
+            TextButton(onClick = onAlternarVisibilidad) {
+                Text(if (visible) "Ocultar" else "Ver")
+            }
+        },
+        visualTransformation = if (visible) {
+            VisualTransformation.None
+        } else {
+            PasswordVisualTransformation()
+        },
+        singleLine = true,
+        enabled = habilitado,
+        isError = hayError,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Password,
+            imeAction = if (esUltimo) ImeAction.Done else ImeAction.Next
+        ),
+        keyboardActions = KeyboardActions(onDone = { onTerminar() }),
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+private fun MensajeAcceso(mensaje: String, esError: Boolean) {
+    Text(
+        text = mensaje,
+        style = MaterialTheme.typography.bodyMedium,
+        color = if (esError) {
+            MaterialTheme.colorScheme.onErrorContainer
+        } else {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = if (esError) {
+                    MaterialTheme.colorScheme.errorContainer
+                } else {
+                    MaterialTheme.colorScheme.secondaryContainer
+                },
+                shape = MaterialTheme.shapes.medium
+            )
+            .padding(12.dp)
+    )
 }
 
 @Composable
 private fun LogoIndusLens() {
     Box(
         modifier = Modifier
-            .size(108.dp)
+            .size(100.dp)
             .background(
                 color = MaterialTheme.colorScheme.surface,
                 shape = MaterialTheme.shapes.extraLarge
@@ -206,14 +381,11 @@ private fun LogoIndusLens() {
         Image(
             painter = painterResource(R.drawable.ic_launcher_foreground),
             contentDescription = "Logotipo de IndusLens",
-            modifier = Modifier.size(96.dp)
+            modifier = Modifier.size(90.dp)
         )
     }
 }
 
-/**
- * Cuentas de demostracion sembradas en Room. No usar estas claves en produccion.
- */
 @Composable
 private fun AvisoCredencialesDemo() {
     Column(
@@ -227,7 +399,7 @@ private fun AvisoCredencialesDemo() {
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(
-            text = "Cuentas de prueba",
+            text = "Acceso rapido para la demostracion",
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

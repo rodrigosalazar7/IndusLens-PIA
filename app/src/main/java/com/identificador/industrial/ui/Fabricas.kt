@@ -24,7 +24,13 @@ object Fabricas {
 
     val Sesion = viewModelFactory {
         initializer {
-            SesionViewModel(aplicacion().repositorioUsuarios)
+            val app = aplicacion()
+            SesionViewModel(
+                app.repositorioUsuarios,
+                app.autenticacionCorreo,
+                app.sesionPersistida,
+                app.repositorioMateriales
+            )
         }
     }
 
@@ -56,7 +62,8 @@ object Fabricas {
                 app.repositorioBusquedas,
                 app.repositorioVisual,
                 obtenerEmbebedor = { app.embebedor },
-                obtenerClasificador = { app.clasificador }
+                obtenerClasificador = { app.clasificador },
+                obtenerReconocedorEnLinea = { app.reconocedorEnLinea }
             )
         }
     }

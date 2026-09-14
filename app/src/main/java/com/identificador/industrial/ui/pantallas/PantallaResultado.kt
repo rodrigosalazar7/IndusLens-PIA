@@ -1,5 +1,6 @@
 package com.identificador.industrial.ui.pantallas
 
+import com.identificador.industrial.ui.componentes.CampoTexto
 import com.identificador.industrial.ui.theme.Espaciado
 import com.identificador.industrial.ui.theme.TamanosControles
 import androidx.compose.foundation.layout.heightIn
@@ -37,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.identificador.industrial.datos.modelo.Material
 import com.identificador.industrial.datos.modelo.MetodoIdentificacion
 import com.identificador.industrial.ia.Fotos
+import com.identificador.industrial.ia.OrigenPista
 import com.identificador.industrial.ia.Pista
 import com.identificador.industrial.ui.componentes.Insignia
 import com.identificador.industrial.ui.componentes.PantallaBase
@@ -54,6 +56,7 @@ fun PantallaResultado(
     onVerSimilares: () -> Unit,
     onRepetirFoto: () -> Unit,
     onElegirPieza: () -> Unit,
+    onEsPiezaNueva: () -> Unit,
     onMedir: () -> Unit
 ) {
     val estado by identificacion.estado.collectAsStateWithLifecycle()
@@ -85,7 +88,8 @@ fun PantallaResultado(
                     pistas = actual.pistas,
                     onVerSimilares = onVerSimilares,
                     onRepetirFoto = onRepetirFoto,
-                    onElegirPieza = onElegirPieza
+                    onElegirPieza = onElegirPieza,
+                    onEsPiezaNueva = onEsPiezaNueva
                 )
 
                 is EstadoIdentificacion.NoIdentificado -> SinAcierto(
@@ -93,7 +97,8 @@ fun PantallaResultado(
                     textoLeido = actual.textoLeido,
                     pistas = actual.pistas,
                     onRepetirFoto = onRepetirFoto,
-                    onElegirPieza = onElegirPieza
+                    onElegirPieza = onElegirPieza,
+                    onEsPiezaNueva = onEsPiezaNueva
                 )
 
                 is EstadoIdentificacion.Fallo -> Aviso(
@@ -267,21 +272,38 @@ private fun HayParecidas(
     pistas: List<Pista>,
     onVerSimilares: () -> Unit,
     onRepetirFoto: () -> Unit,
-    onElegirPieza: () -> Unit
+    onElegirPieza: () -> Unit,
+    onEsPiezaNueva: () -> Unit
 ) {
-    Insignia(texto = "Sin certeza", color = AmarilloAviso)
+    val objetoReconocido = pistas.firstOrNull()
+
+    Insignia(
+        texto = if (objetoReconocido == null) "Sin certeza" else "Objeto reconocido por IA",
+        color = if (objetoReconocido == null) AmarilloAviso else MaterialTheme.colorScheme.secondary
+    )
 
     Text(
-        text = "No se pudo confirmar la pieza",
+        text = objetoReconocido?.let { pista ->
+            "La IA reconoce: ${pista.etiqueta.replaceFirstChar { it.uppercase() }}"
+        } ?: "No se pudo confirmar la pieza",
         style = MaterialTheme.typography.titleLarge,
         color = MaterialTheme.colorScheme.onBackground
     )
 
     Text(
-        text = "No se leyo ningun numero de parte utilizable, y el mayor " +
-            "parecido visual es del $mejorPorcentaje%, insuficiente para darla " +
-            "por segura. " +
-            if (cuantas == 1) "Hay una pieza candidata." else "Hay $cuantas piezas candidatas.",
+        text = if (objetoReconocido != null) {
+            "El objeto general si fue reconocido, pero todavia no alcanza para " +
+                "confirmar una pieza exacta del inventario. El mayor parecido " +
+                "del catalogo es $mejorPorcentaje%."
+        } else {
+            "No se leyo ningun numero de parte utilizable, y el mayor " +
+                "parecido visual es del $mejorPorcentaje%, insuficiente para " +
+                "darla por segura. " + if (cuantas == 1) {
+                "Hay una pieza candidata."
+            } else {
+                "Hay $cuantas piezas candidatas."
+            }
+        },
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
@@ -311,6 +333,18 @@ private fun HayParecidas(
         Text("Decirle yo que pieza es")
     }
 
+    // No esta en el catalogo, pero la foto ya sirve como su primera huella:
+    // se guarda al dar de alta, sin tener que repetirla.
+    BotonSecundario(
+        onClick = onEsPiezaNueva,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = TamanosControles.alturaMinima)
+    ) {
+        Text("No esta en el catalogo, darla de alta")
+    }
+
     BotonSecundario(
         onClick = onRepetirFoto,
         shape = MaterialTheme.shapes.medium,
@@ -323,15 +357,14 @@ private fun HayParecidas(
 }
 
 /**
- * Lo que el modelo generico cree ver. Se muestra como pista, nunca como
- * afirmacion: acierta con tornilleria o cadenas, pero se pierde con
- * rodamientos o contactores.
+ * Reconocimiento general real. Puede venir de Firebase AI si la persona
+ * autorizo el envio del recorte, o del modelo EfficientNet dentro del equipo.
  */
 @Composable
 private fun PistasIA(pistas: List<Pista>) {
     Tarjeta {
         Text(
-            text = "Lo que ve la camara",
+            text = "Reconocimiento general",
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -369,7 +402,11 @@ private fun PistasIA(pistas: List<Pista>) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "${(pista.confianza * 100).toInt()}%",
+                    text = if (pista.origen == OrigenPista.FIREBASE_AI) {
+                        "IA en linea"
+                    } else {
+                        "${(pista.confianza * 100).toInt()}%"
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -377,8 +414,8 @@ private fun PistasIA(pistas: List<Pista>) {
         }
         Spacer(Modifier.height(Espaciado.pequeno))
         Text(
-            text = "Reconoce formas comunes, no numeros de parte. Es una pista " +
-                "para acotar el catalogo, no una identificacion.",
+            text = "Es reconocimiento real de la fotografia. Identifica el tipo " +
+                "de objeto, pero no inventa marca, medida ni numero de parte.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -391,12 +428,20 @@ private fun SinAcierto(
     textoLeido: String,
     pistas: List<Pista>,
     onRepetirFoto: () -> Unit,
-    onElegirPieza: () -> Unit
+    onElegirPieza: () -> Unit,
+    onEsPiezaNueva: () -> Unit
 ) {
-    Insignia(texto = "No identificada", color = AmarilloAviso)
+    val objetoReconocido = pistas.firstOrNull()
+
+    Insignia(
+        texto = if (objetoReconocido == null) "No identificada" else "Objeto reconocido por IA",
+        color = if (objetoReconocido == null) AmarilloAviso else MaterialTheme.colorScheme.secondary
+    )
 
     Text(
-        text = when (razon) {
+        text = objetoReconocido?.let { pista ->
+            "La IA reconoce: ${pista.etiqueta.replaceFirstChar { it.uppercase() }}"
+        } ?: when (razon) {
             RazonFallo.SIN_TEXTO -> "No se leyo ningun texto en la pieza"
             RazonFallo.SIN_COINCIDENCIA -> "Se leyo texto, pero no coincide con el catalogo"
             RazonFallo.SIN_HUELLAS -> "Todavia no hay piezas que comparar"
@@ -406,7 +451,19 @@ private fun SinAcierto(
     )
 
     Text(
-        text = when (razon) {
+        text = if (objetoReconocido != null) {
+            val familia = objetoReconocido.categoria?.etiqueta?.let { " Familia: $it." }.orEmpty()
+            if (objetoReconocido.origen == OrigenPista.FIREBASE_AI) {
+                "Firebase AI reconocio el objeto usando Internet.$familia Como " +
+                    "aun no coincide con una pieza exacta del catalogo, puedes " +
+                    "seleccionarla para que IndusLens aprenda esta fotografia."
+            } else {
+                "El modelo visual dentro del telefono identifico el objeto con " +
+                    "${(objetoReconocido.confianza * 100).toInt()}% de confianza.$familia " +
+                    "Como aun no coincide con una pieza exacta del catalogo, puedes " +
+                    "seleccionarla para que IndusLens aprenda esta fotografia."
+            }
+        } else when (razon) {
             RazonFallo.SIN_TEXTO ->
                 "La pieza puede no tener marcas legibles, o la foto quedo lejos, " +
                     "movida o con poca luz. Acerca el numero de parte y vuelve a intentarlo."
@@ -451,6 +508,20 @@ private fun SinAcierto(
             .heightIn(min = TamanosControles.alturaMinima)
     ) {
         Text("Decirle yo que pieza es", style = MaterialTheme.typography.labelLarge)
+    }
+
+    // Cuando la pieza sencillamente no esta en el catalogo (por ejemplo, una
+    // herramienta que la IA general si reconoce pero que nadie ha dado de
+    // alta), esta es la salida: se registra y la foto que ya se tomo queda
+    // como su primera huella, sin repetirla.
+    BotonSecundario(
+        onClick = onEsPiezaNueva,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = TamanosControles.alturaMinima)
+    ) {
+        Text("No esta en el catalogo, darla de alta")
     }
 
     BotonSecundario(
