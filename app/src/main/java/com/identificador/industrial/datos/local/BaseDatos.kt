@@ -168,9 +168,23 @@ abstract class BaseDatos : RoomDatabase() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
                 IntegridadUsuarios.sentencias.forEach(db::execSQL)
-                insertarMateriales(db)
+                val nuevas = insertarMateriales(db)
                 insertarUsuarios(db)
-                insertarHuellas(db)
+                insertarHuellas(db, nuevas)
+            }
+
+            override fun onOpen(db: SupportSQLiteDatabase) {
+                super.onOpen(db)
+                // Incorpora el kit tambien al actualizar una instalacion con
+                // datos. Nunca reemplaza filas, reactiva bajas ni duplica vistas.
+                // Materiales y huellas se incorporan juntos o se revierten juntos.
+                db.beginTransaction()
+                try {
+                    insertarHuellas(db, insertarMateriales(db))
+                    db.setTransactionSuccessful()
+                } finally {
+                    db.endTransaction()
+                }
             }
 
             /**
@@ -181,7 +195,8 @@ abstract class BaseDatos : RoomDatabase() {
              * la app arranca igual y las piezas se van ensenando una a una
              * desde la ficha de cada material.
              */
-            private fun insertarHuellas(db: SupportSQLiteDatabase) {
+            private fun insertarHuellas(db: SupportSQLiteDatabase, nuevas: Set<String>) {
+                if (nuevas.isEmpty()) return
                 val contenido = try {
                     contexto.assets.open(ARCHIVO_HUELLAS)
                         .bufferedReader()
@@ -200,6 +215,9 @@ abstract class BaseDatos : RoomDatabase() {
 
                 for (i in 0 until lista.length()) {
                     val fila = lista.getJSONObject(i)
+                    // Un ID ocupado puede pertenecer a otra pieza del usuario.
+                    // Sus referencias nunca deben mezclarse con las del kit.
+                    if (fila.getString("materialId") !in nuevas) continue
                     val valores = fila.getJSONArray("vector")
                     val vector = FloatArray(valores.length()) { j ->
                         valores.getDouble(j).toFloat()
@@ -216,7 +234,16 @@ abstract class BaseDatos : RoomDatabase() {
                 }
             }
 
-            private fun insertarMateriales(db: SupportSQLiteDatabase) {
+            private fun insertarMateriales(db: SupportSQLiteDatabase): Set<String> {
+                val ids = mutableSetOf<String>()
+                val numeros = mutableSetOf<String>()
+                db.query("SELECT id, numeroParte FROM materiales").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        ids += cursor.getString(0)
+                        numeros += Material.normalizarNumeroParte(cursor.getString(1))
+                    }
+                }
+                val nuevas = mutableSetOf<String>()
                 val sql = """
                     INSERT INTO materiales
                     (id, nombre, descripcion, numeroParte, fabricante, categoria,
@@ -227,6 +254,8 @@ abstract class BaseDatos : RoomDatabase() {
                 """.trimIndent()
 
                 CatalogoInicial.materiales.forEach { m ->
+                    val numero = Material.normalizarNumeroParte(m.numeroParte)
+                    if (m.id in ids || numero in numeros) return@forEach
                     // El tipo se declara explicito: la lista mezcla textos,
                     // numeros y nulos, y sin ayuda Kotlin infiere un tipo
                     // interseccion que no sirve para execSQL.
@@ -253,7 +282,11 @@ abstract class BaseDatos : RoomDatabase() {
                             if (m.activo) 1 else 0
                         )
                     )
+                    ids += m.id
+                    numeros += numero
+                    nuevas += m.id
                 }
+                return nuevas
             }
 
             private fun insertarUsuarios(db: SupportSQLiteDatabase) {

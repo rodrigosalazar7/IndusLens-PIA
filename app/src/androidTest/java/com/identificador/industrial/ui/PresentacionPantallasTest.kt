@@ -26,6 +26,7 @@ class PresentacionPantallasTest {
     private lateinit var repo: RepositorioMateriales
     private val almacen = ViewModelStore()
     private var contador = 0
+    private val piezasIniciales = CatalogoInicial.materiales.size
 
     @Before fun preparar() {
         contexto.deleteDatabase(archivo)
@@ -140,11 +141,11 @@ class PresentacionPantallasTest {
         compose.onNodeWithTag("guardar_material").performClick()
         esperar("error_formulario")
         compose.onNodeWithTag("campo_NOMBRE").assertTextContains("Otra pieza")
-        assertEquals(1, runBlocking { repo.contar() })
+        assertEquals(piezasIniciales + 1, runBlocking { repo.contar() })
         campo(CampoMaterial.NUMERO_PARTE, "KIT-02")
         compose.onNodeWithTag("guardar_material").performClick()
         esperar("detalle_pieza")
-        assertEquals(2, runBlocking { repo.contar() })
+        assertEquals(piezasIniciales + 2, runBlocking { repo.contar() })
     }
     @Test fun salirPideConfirmacionYCancelarConservaElBorrador() {
         mostrar("editar")
@@ -157,7 +158,7 @@ class PresentacionPantallasTest {
         compose.onNodeWithContentDescription("Volver").performClick()
         compose.onNodeWithText("Descartar cambios").performClick()
         esperar("nueva_pieza")
-        assertEquals(0, runBlocking { repo.contar() })
+        assertEquals(piezasIniciales, runBlocking { repo.contar() })
     }
     @Test fun operadorPuedeConsultarPeroNoVeAccionesAdministrativas() {
         val material = runBlocking { repo.crear(pieza()) }
@@ -169,5 +170,76 @@ class PresentacionPantallasTest {
         esperar("detalle_pieza")
         compose.onNodeWithTag("editar_pieza").assertDoesNotExist()
         compose.onNodeWithTag("ver_ubicacion").assertExists()
+    }
+
+    @Test fun resultadoDetalleYEdicionConservanFotoYDatosDeLuis() {
+        val imagen = android.graphics.Bitmap.createBitmap(1200, 600, android.graphics.Bitmap.Config.ARGB_8888)
+        val lienzo = android.graphics.Canvas(imagen)
+        lienzo.drawColor(android.graphics.Color.WHITE)
+        val pincel = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.BLACK
+            typeface = android.graphics.Typeface.MONOSPACE
+            textSize = 110f
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+        lienzo.drawText("TOR-001", 600f, 350f, pincel)
+        val archivoFoto = java.io.File(contexto.cacheDir, "prueba-ui-luis.png")
+        archivoFoto.outputStream().use { imagen.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        imagen.recycle()
+        lateinit var identificacion: IdentificacionViewModel
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            identificacion = conservar(IdentificacionViewModel(
+                repo, RepositorioBusquedas(db.busquedaDao()), RepositorioVisual(db.embeddingDao(), db.materialDao()),
+                { error("La etiqueta debe resolverse por OCR") },
+                { error("No se necesita clasificacion general") },
+                { error("Esta prueba nunca usa la nube") }
+            ))
+        }
+        try {
+            compose.setContent {
+                var pantalla by remember { mutableStateOf("resultado") }
+                IndusLensTheme {
+                    when (pantalla) {
+                        "resultado" -> PantallaResultado(identificacion, {},
+                            { pantalla = "detalle" }, {}, {}, {}, null, {})
+                        "detalle" -> PantallaDetalle("M-027", {}, {}, {},
+                            puedeEditar = true, onEditar = { pantalla = "editar" },
+                            vm = remember { conservar(DetalleViewModel(repo,
+                                RepositorioVisual(db.embeddingDao(), db.materialDao()))) })
+                        "editar" -> PantallaEditarMaterial("M-027", { pantalla = "detalle" },
+                            { pantalla = "detalle" },
+                            vm = remember { conservar(EdicionViewModel(repo)) })
+                    }
+                }
+            }
+            compose.runOnIdle {
+                identificacion.registrarFoto(android.net.Uri.fromFile(archivoFoto))
+                identificacion.analizar(contexto, "u3")
+            }
+            compose.waitUntil(30_000) {
+                identificacion.estado.value is EstadoIdentificacion.Identificado ||
+                    identificacion.estado.value is EstadoIdentificacion.Fallo
+            }
+            assertTrue(identificacion.estado.value.toString(),
+                identificacion.estado.value is EstadoIdentificacion.Identificado)
+            val descripcionFoto = "Foto de referencia de la pieza en el catalogo"
+            compose.waitUntil(10_000) {
+                compose.onAllNodesWithContentDescription(descripcionFoto).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithText("Ver detalle del material").performScrollTo().performClick()
+            esperar("detalle_pieza")
+            compose.waitUntil(10_000) {
+                compose.onAllNodesWithContentDescription(descripcionFoto).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithTag("editar_pieza").performScrollTo().performClick()
+            esperar("guardar_material")
+            campo(CampoMaterial.EXISTENCIA, "91")
+            compose.onNodeWithTag("guardar_material").performClick()
+            esperar("detalle_pieza")
+            val actual = runBlocking { repo.obtenerPorId("M-027")!! }
+            assertEquals(91, actual.existencia)
+            assertEquals("M-027.jpg", actual.fotoReferencia)
+            assertEquals(10, runBlocking { db.embeddingDao().contarDeMaterial("M-027") })
+        } finally { archivoFoto.delete() }
     }
 }

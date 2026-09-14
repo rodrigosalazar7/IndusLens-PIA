@@ -22,6 +22,7 @@ class PiezasIntegracionTest {
     private val archivo = "pruebas-presentacion-piezas.db"
     private lateinit var db: BaseDatos
     private lateinit var repo: RepositorioMateriales
+    private val piezasIniciales = CatalogoInicial.materiales.size
 
     @Before fun abrir() {
         contexto.deleteDatabase(archivo)
@@ -45,9 +46,9 @@ class PiezasIntegracionTest {
     }
 
     @Test fun altaPersisteAlReabrirLaBaseYSePuedeBuscar(): Unit = runBlocking {
-        assertEquals(0, repo.contar())
+        assertEquals(piezasIniciales, repo.contar())
         val creada = repo.crear(pieza())
-        assertEquals("M-001", creada.id)
+        assertEquals("M-031", creada.id)
         db.close()
         db = BaseDatos.crear(contexto, archivo)
         repo = RepositorioMateriales(db.materialDao())
@@ -59,13 +60,13 @@ class PiezasIntegracionTest {
         val original = repo.crear(pieza("AB/123"))
         try { repo.crear(pieza(" ab-123 ")); fail("Aceptó un duplicado") }
         catch (_: IllegalArgumentException) { }
-        assertEquals(1, repo.contar())
+        assertEquals(piezasIniciales + 1, repo.contar())
         assertEquals(original, repo.obtenerPorId(original.id))
     }
     @Test fun altasSimultaneasNoCompartenClave(): Unit = runBlocking {
         val creadas = (1..8).map { n -> async(Dispatchers.Default) { repo.crear(pieza("KIT-$n")) } }.awaitAll()
         assertEquals(8, creadas.map { it.id }.toSet().size)
-        assertEquals(8, repo.contar())
+        assertEquals(piezasIniciales + 8, repo.contar())
     }
     @Test fun daoNoReemplazaPorClaveONumeroParte(): Unit = runBlocking {
         val original = repo.crear(pieza())
@@ -89,14 +90,14 @@ class PiezasIntegracionTest {
         assertEquals(9, actual.existencia)
         assertEquals(Ubicacion("C", "01", "D", 3, 3), actual.ubicacion)
         assertEquals(original.fotoReferencia, actual.fotoReferencia)
-        assertEquals(1, repo.contar())
+        assertEquals(piezasIniciales + 1, repo.contar())
     }
     @Test fun piezaInexistenteNoSeConvierteEnAltaAccidental(): Unit = runBlocking {
         val vm = editar("no-existe")
         assertNotNull(vm.errorCarga)
         withContext(Dispatchers.Main) { vm.guardar() }
         assertFalse(vm.terminado)
-        assertEquals(0, repo.contar())
+        assertEquals(piezasIniciales, repo.contar())
     }
     @Test fun edicionDesactualizadaNoPisaCambiosRecientes(): Unit = runBlocking {
         val original = repo.crear(pieza())
@@ -120,7 +121,7 @@ class PiezasIntegracionTest {
         esperar { !vm.guardando }
         assertTrue(vm.dadaDeBaja)
         assertFalse(repo.obtenerPorId(original.id)!!.activo)
-        assertTrue(repo.observarTodos().first().isEmpty())
+        assertFalse(repo.observarTodos().first().any { it.id == original.id })
         assertNull(repo.buscarPorNumeroParte(original.numeroParte))
         assertTrue(visual.buscarParecidos(floatArrayOf(1f, 0f)).isEmpty())
         assertEquals(1, visual.vistasDe(original.id))

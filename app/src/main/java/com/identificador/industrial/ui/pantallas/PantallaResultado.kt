@@ -40,6 +40,7 @@ import com.identificador.industrial.datos.modelo.MetodoIdentificacion
 import com.identificador.industrial.ia.Fotos
 import com.identificador.industrial.ia.OrigenPista
 import com.identificador.industrial.ia.Pista
+import com.identificador.industrial.ui.componentes.FotoReferenciaMaterial
 import com.identificador.industrial.ui.componentes.Insignia
 import com.identificador.industrial.ui.componentes.PantallaBase
 import com.identificador.industrial.ui.theme.AmarilloAviso
@@ -85,6 +86,7 @@ fun PantallaResultado(
                 is EstadoIdentificacion.Similares -> HayParecidas(
                     cuantas = actual.coincidencias.size,
                     mejorPorcentaje = actual.coincidencias.first().porcentaje,
+                    mejorMaterial = actual.coincidencias.first().material,
                     pistas = actual.pistas,
                     onVerSimilares = onVerSimilares,
                     onRepetirFoto = onRepetirFoto,
@@ -185,6 +187,8 @@ private fun Acierto(
         color = MaterialTheme.colorScheme.onBackground
     )
 
+    FotoReferenciaMaterial(fotoReferencia = material.fotoReferencia)
+
     Tarjeta {
         Text(
             text = "Numero de parte",
@@ -269,41 +273,43 @@ private fun Acierto(
 private fun HayParecidas(
     cuantas: Int,
     mejorPorcentaje: Int,
+    mejorMaterial: Material,
     pistas: List<Pista>,
     onVerSimilares: () -> Unit,
     onRepetirFoto: () -> Unit,
     onElegirPieza: () -> Unit,
     onEsPiezaNueva: (() -> Unit)?
 ) {
-    val objetoReconocido = pistas.firstOrNull()
-
+    // Se prioriza mostrar la pieza del catalogo con mas parecido visual, no la
+    // etiqueta generica del reconocimiento de IA (esa queda mas abajo, como
+    // apoyo, en la tarjeta "Reconocimiento general"): es la candidata real,
+    // con nombre y foto de referencia, la que de verdad ayuda a confirmar.
     Insignia(
-        texto = if (objetoReconocido == null) "Sin certeza" else "Objeto reconocido por IA",
-        color = if (objetoReconocido == null) AmarilloAviso else MaterialTheme.colorScheme.secondary
+        texto = "Posible coincidencia: $mejorPorcentaje%",
+        color = if (mejorPorcentaje >= 70) VerdeExito else AmarilloAviso
     )
 
     Text(
-        text = objetoReconocido?.let { pista ->
-            "La IA reconoce: ${pista.etiqueta.replaceFirstChar { it.uppercase() }}"
-        } ?: "No se pudo confirmar la pieza",
+        text = "¿Es esta pieza? ${mejorMaterial.nombre}",
         style = MaterialTheme.typography.titleLarge,
         color = MaterialTheme.colorScheme.onBackground
     )
 
+    FotoReferenciaMaterial(
+        fotoReferencia = mejorMaterial.fotoReferencia,
+        alto = 150.dp,
+        mostrarEtiqueta = false
+    )
+
     Text(
-        text = if (objetoReconocido != null) {
-            "El objeto general si fue reconocido, pero todavia no alcanza para " +
-                "confirmar una pieza exacta del inventario. El mayor parecido " +
-                "del catalogo es $mejorPorcentaje%."
-        } else {
-            "No se leyo ningun numero de parte utilizable, y el mayor " +
-                "parecido visual es del $mejorPorcentaje%, insuficiente para " +
-                "darla por segura. " + if (cuantas == 1) {
-                "Hay una pieza candidata."
+        text = "Es la pieza del catalogo con mas parecido visual a tu " +
+            "fotografia ($mejorPorcentaje%), pero no llega al umbral para " +
+            "darla por segura automaticamente. Compara con la foto de arriba " +
+            "antes de confirmarla." + if (cuantas > 1) {
+                " Hay $cuantas piezas candidatas en total."
             } else {
-                "Hay $cuantas piezas candidatas."
-            }
-        },
+                ""
+            },
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )

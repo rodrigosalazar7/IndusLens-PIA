@@ -41,6 +41,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.identificador.industrial.datos.modelo.EmbeddingMaterial
 import com.identificador.industrial.datos.modelo.Material
 import com.identificador.industrial.ui.Fabricas
+import com.identificador.industrial.ui.componentes.FotoReferenciaMaterial
 import com.identificador.industrial.ui.componentes.Insignia
 import com.identificador.industrial.ui.componentes.PantallaBase
 import com.identificador.industrial.ui.theme.AmarilloAviso
@@ -148,6 +149,8 @@ private fun Contenido(
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
+
+        FotoReferenciaMaterial(fotoReferencia = material.fotoReferencia)
 
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Espaciado.pequeno),
             verticalArrangement = Arrangement.spacedBy(Espaciado.pequeno)) {

@@ -21,6 +21,7 @@ muestra informacion y ubicacion.
 - [Usuarios](docs/USUARIOS.md): integridad y migracion de Room a version 5.
 - [Actividades 09-11](docs/VERIFICACION_ACTIVIDADES_09_11.md): evidencia al 4 de septiembre de 2026.
 - [Actividades 11-14](docs/VERIFICACION_ACTIVIDADES_11_14.md): cambios y pruebas de esta revision.
+- [Presentacion e integracion del kit](docs/NOTAS_PRESENTACION_2026-09-14.md): pantallas verificadas, limites y compatibilidad de datos.
 - Cada Pull Request dirigido a `main` se compila automaticamente con Android CI.
 
 ---
@@ -91,7 +92,8 @@ adb install -r app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
 | `almacen`  | `1234`     | Almacenista   |
 | `admin`    | `admin`    | Administrador |
 
-Solo el administrador ve habilitada la pantalla de administracion de materiales.
+Todas las cuentas locales pueden consultar el catalogo y el detalle. Solo el
+administrador puede dar de alta, editar inventario o dar de baja una pieza.
 
 Tambien se pueden crear cuentas con correo. El enlace de verificacion se envia
 con Firebase Authentication y la app no permite entrar hasta que el correo se
@@ -172,13 +174,17 @@ Cuatro tablas en SQLite mediante Room, version 5. El esquema se exporta a `app/s
 
 | Tabla | Contenido |
 |-------|-----------|
-| `materiales` | Catalogo de piezas. 26 registros de ejemplo se insertan al crear la base |
+| `materiales` | Catalogo de piezas. Kit de cuatro piezas TOR-001 a TOR-004 aportado por Luis |
 | `usuarios` | Cuentas y roles. La contrasena se guarda como hash con sal por usuario |
 | `historial_busquedas` | Registro de identificaciones (la pantalla llega en la fase 5) |
 | `embeddings` | Huellas visuales. Varias por pieza, una por cada vista fotografiada. Tabla aparte a proposito: son varios kilobytes cada una y el catalogo se consulta constantemente |
 
 Detalles de diseno que conviene conocer antes de tocar el codigo:
 
+- **Actualizar no borra el inventario.** Al abrir la base se agregan solo las
+  piezas del kit cuyos IDs y numeros de parte no esten ocupados. Se conservan
+  existencias, ubicaciones y bajas; las 43 huellas precargadas se insertan
+  solamente para piezas nuevas, sin duplicarlas al reiniciar.
 - **Los enums se guardan por nombre, no por posicion.** Si alguien reordena las
   constantes de `Categoria`, los datos ya guardados siguen siendo correctos.
   Con el ordinal, un rodamiento se convertiria en un tornillo en silencio.
@@ -188,9 +194,10 @@ Detalles de diseno que conviene conocer antes de tocar el codigo:
 - **La ubicacion se guarda descompuesta** en almacen, pasillo, rack, nivel y
   posicion, no como una sola cadena, para poder ordenar por pasillo cuando se
   arme la ruta de recogida.
-- **El catalogo semilla incluye cuatro rodamientos casi identicos a la vista.**
-  Es deliberado: son el caso dificil que justifica dar prioridad al OCR sobre
-  el parecido visual.
+- **El kit incluye cuatro piezas de tornilleria, fotos y referencias visuales.**
+  Detalle, resultado y similares muestran la foto del catalogo para compararla
+  con la pieza. Las fotografias nuevas deben ensayarse con los angulos y la
+  iluminacion que se usaran en la demostracion.
 - **Las contrasenas nunca se guardan en claro.** Se usa SHA-256 con sal e
   iteraciones. Queda documentado en el codigo que lo correcto en produccion
   seria bcrypt, scrypt o Argon2; es deuda tecnica asumida, no un descuido.
@@ -393,7 +400,7 @@ app/src/main/java/com/identificador/industrial/
 ├── datos/
 │   ├── modelo/                     Material, Ubicacion, Categoria, Usuario...
 │   ├── local/                      Room: entidades, DAO, base y convertidores
-│   ├── CatalogoInicial.kt          Los 26 materiales de ejemplo
+│   ├── CatalogoInicial.kt          Kit de cuatro piezas y cuentas locales
 │   ├── Claves.kt                   Hash y verificacion de contrasenas
 │   ├── RepositorioMateriales.kt    Unico acceso al catalogo desde la interfaz
 │   └── RepositorioUsuarios.kt      Autenticacion

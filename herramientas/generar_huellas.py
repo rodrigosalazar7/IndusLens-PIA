@@ -9,19 +9,33 @@ escala cuando hay que dar de alta un catalogo entero. Este script hace el
 trabajo en bloque: lee una carpeta de fotografias, calcula el vector de cada
 pieza y deja un archivo que la app carga la primera vez que se instala.
 
-Requisito imprescindible
-------------------------
-Se usa EXACTAMENTE el mismo modelo que la aplicacion Android
-(mobilenet_v3_small.tflite, el que esta en app/src/main/assets).
+Requisitos imprescindibles
+---------------------------
+1. Se usa EXACTAMENTE el mismo modelo que la aplicacion Android
+   (mobilenet_v3_small.tflite, el que esta en app/src/main/assets).
 
-Esto no es un detalle menor: dos modelos distintos producen vectores en
-espacios distintos, y compararlos da numeros que parecen validos pero no
-significan nada. Si algun dia se cambia el modelo en la app, hay que
-regenerar todas las huellas con este mismo script.
+2. Se aplica EXACTAMENTE el mismo recorte central que usa la app antes de
+   calcular el vector (ver `Fotos.kt`, `recortarCentro` con
+   `PROPORCION_MARCO = 0.7f`): un cuadrado centrado cuyo lado es el 70% del
+   lado menor de la imagen.
+
+Ninguno de los dos puntos es un detalle menor. Dos modelos distintos
+producen vectores en espacios distintos, y lo mismo pasa si una de las dos
+fuentes recorta la imagen y la otra no: el enrolamiento hecho desde la app
+siempre usa la foto recortada al marco guia, asi que una huella calculada
+sobre la foto completa no es comparable con lo que la app calcula al
+identificar una pieza, aunque el modelo sea el mismo.
+
+Por eso el campo "modelo" que se escribe en el JSON no es el nombre pelado
+del modelo, sino el mismo identificador que usa la app
+(`EmbeddingMaterial.MODELO_ACTUAL`, hoy "mobilenet_v3_small_recorte70"): si
+algun dia cambia el modelo o el recorte en Android, ese identificador
+tambien debe actualizarse aqui, y las huellas viejas quedan ignoradas solas
+por la app en vez de compararse por error contra un espacio distinto.
 
 Como se usa
 -----------
-    pip install mediapipe
+    pip install mediapipe pillow
 
     python generar_huellas.py --fotos ./fotos_catalogo
 
@@ -51,14 +65,23 @@ import sys
 from pathlib import Path
 
 EXTENSIONES = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
-NOMBRE_MODELO = "mobilenet_v3_small"
+
+# Nombre del archivo .tflite en assets (no cambia aunque cambie el recorte).
+NOMBRE_ARCHIVO_MODELO = "mobilenet_v3_small"
+
+# Identificador que se escribe en el JSON y que la app compara contra
+# EmbeddingMaterial.MODELO_ACTUAL. Debe coincidir siempre con ese valor.
+IDENTIFICADOR_HUELLA = "mobilenet_v3_small_recorte70"
+
+# Debe coincidir con Fotos.PROPORCION_MARCO en la app Android.
+PROPORCION_MARCO = 0.7
 
 
 def rutas_por_defecto() -> tuple[Path, Path]:
     """Deduce donde estan el modelo y la carpeta de assets del proyecto."""
     raiz = Path(__file__).resolve().parent.parent
     assets = raiz / "app" / "src" / "main" / "assets"
-    return assets / f"{NOMBRE_MODELO}.tflite", assets / "huellas_iniciales.json"
+    return assets / f"{NOMBRE_ARCHIVO_MODELO}.tflite", assets / "huellas_iniciales.json"
 
 
 def construir_embebedor(ruta_modelo: Path):
@@ -80,10 +103,30 @@ def construir_embebedor(ruta_modelo: Path):
     return vision.ImageEmbedder.create_from_options(opciones)
 
 
-def calcular(embebedor, ruta_imagen: Path) -> list[float]:
-    import mediapipe as mp
+def recortar_centro(imagen_pil, proporcion: float):
+    """Replica Fotos.recortarCentro: cuadrado centrado, lado = min(w,h)*proporcion."""
+    ancho, alto = imagen_pil.size
+    lado = max(1, int(min(ancho, alto) * proporcion))
+    if lado >= ancho and lado >= alto:
+        return imagen_pil
+    x = (ancho - lado) // 2
+    y = (alto - lado) // 2
+    return imagen_pil.crop((x, y, x + lado, y + lado))
 
-    imagen = mp.Image.create_from_file(str(ruta_imagen))
+
+def calcular(embebedor, ruta_imagen: Path) -> list[float]:
+    import numpy as np
+    import mediapipe as mp
+    from PIL import Image, ImageOps
+
+    with Image.open(ruta_imagen) as bruta:
+        # Respeta la orientacion EXIF, igual que hace la app con las fotos
+        # elegidas desde la galeria.
+        derecha = ImageOps.exif_transpose(bruta).convert("RGB")
+        recortada = recortar_centro(derecha, PROPORCION_MARCO)
+        arreglo = np.asarray(recortada)
+
+    imagen = mp.Image(image_format=mp.ImageFormat.SRGB, data=arreglo)
     resultado = embebedor.embed(imagen)
     if not resultado.embeddings:
         raise RuntimeError("el modelo no devolvio ningun vector")
@@ -115,7 +158,8 @@ def main() -> int:
     if not imagenes:
         sys.exit(f"No hay imagenes en {args.fotos}")
 
-    print(f"Modelo    : {args.modelo.name}")
+    print(f"Modelo    : {args.modelo.name}  (etiqueta: {IDENTIFICADOR_HUELLA})")
+    print(f"Recorte   : cuadrado centrado al {int(PROPORCION_MARCO * 100)}%")
     print(f"Imagenes  : {len(imagenes)}")
     print()
 
@@ -132,7 +176,7 @@ def main() -> int:
             continue
 
         huellas.append(
-            {"materialId": material_id, "modelo": NOMBRE_MODELO, "vector": vector}
+            {"materialId": material_id, "modelo": IDENTIFICADOR_HUELLA, "vector": vector}
         )
         print(f"  [ok]    {material_id}  ({len(vector)} dimensiones)")
 

@@ -94,6 +94,43 @@ object Fotos {
         return if (grados == 0f) mapa else rotar(mapa, grados)
     }
 
+    /**
+     * Carga la foto de referencia de un material del catalogo, guardada en
+     * `assets/fotos_catalogo/<archivo>`.
+     *
+     * Es la misma fotografia con la que se calculo la huella visual de esa
+     * pieza (ver `herramientas/generar_huellas.py`). Mostrarla junto al
+     * resultado le permite a la persona comparar a simple vista si la pieza
+     * que tiene enfrente es la misma que identifico la app, en vez de confiar
+     * a ciegas en un numero de parecido.
+     *
+     * Devuelve null si el material no trae foto de referencia (campo
+     * `fotoReferencia` vacio) o si el archivo no existe entre los assets;
+     * cualquiera de los dos casos es normal y no debe verse como un error.
+     */
+    fun cargarDeAssets(
+        contexto: Context,
+        nombreArchivo: String,
+        anchoMaximo: Int = 512
+    ): Bitmap? = try {
+        contexto.assets.open("fotos_catalogo/$nombreArchivo").use { flujo ->
+            val opciones = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            // Los assets no son un Uri: no se pueden abrir dos flujos y medir
+            // aparte como en cargarReducida, asi que se decodifica de una vez
+            // y solo se reduce si hiciera falta.
+            val bytes = flujo.readBytes()
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opciones)
+            var muestreo = 1
+            while (opciones.outWidth / muestreo > anchoMaximo) muestreo *= 2
+            BitmapFactory.decodeByteArray(
+                bytes, 0, bytes.size,
+                BitmapFactory.Options().apply { inSampleSize = muestreo }
+            )
+        }
+    } catch (e: java.io.IOException) {
+        null
+    }
+
     private fun orientacionExif(contexto: Context, uri: Uri): Float =
         try {
             contexto.contentResolver.openInputStream(uri)?.use { entrada ->

@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.identificador.industrial.datos.modelo.Coincidencia
+import com.identificador.industrial.ui.componentes.FotoReferenciaMaterial
 import com.identificador.industrial.ui.componentes.Insignia
 import com.identificador.industrial.ui.componentes.PantallaBase
 import com.identificador.industrial.ui.theme.AmarilloAviso
@@ -134,6 +135,13 @@ private fun FilaCoincidencia(
                     color = colorSegunParecido(coincidencia.similitud)
                 )
             }
+
+            FotoReferenciaMaterial(
+                fotoReferencia = material.fotoReferencia,
+                alto = 120.dp,
+                mostrarEtiqueta = false,
+                modifier = Modifier.padding(top = Espaciado.pequeno)
+            )
 
             Spacer(Modifier.height(Espaciado.pequeno))
 
