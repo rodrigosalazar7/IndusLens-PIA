@@ -34,7 +34,18 @@ class RepositorioMateriales(
 
     /** Con el texto vacio devuelve el catalogo completo en lugar de nada. */
     fun buscar(texto: String): Flow<List<Material>> =
-        if (texto.isBlank()) dao.observarTodos() else dao.buscar(texto.trim())
+        if (texto.isBlank()) dao.observarTodos() else dao.buscar(escaparComodines(texto.trim()))
+
+    /**
+     * Escapa los comodines de SQLite (`%` y `_`) antes de armar el LIKE.
+     *
+     * Sin esto, buscar un numero de parte que trajera de verdad uno de estos
+     * caracteres (por ejemplo "M_027") no lo buscaria tal cual, sino que "_"
+     * se interpretaria como "cualquier caracter" y devolveria coincidencias
+     * que no tienen nada que ver.
+     */
+    private fun escaparComodines(texto: String): String =
+        texto.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
     /**
      * Busqueda por numero de parte. Normaliza lo recibido antes de consultar,

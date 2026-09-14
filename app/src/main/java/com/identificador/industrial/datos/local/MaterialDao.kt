@@ -37,15 +37,21 @@ interface MaterialDao {
     )
     suspend fun buscarPorNumeroParte(numeroNormalizado: String): Material?
 
-    /** Busqueda libre para el buscador de la pantalla de administracion. */
+    /**
+     * Busqueda libre para el buscador de la pantalla de administracion.
+     *
+     * `texto` debe llegar ya escapado (ver `RepositorioMateriales.escaparComodines`):
+     * sin eso, un numero de parte que trajera un `%` o un `_` de verdad
+     * cambiaria el significado de la busqueda en lugar de buscarse tal cual.
+     */
     @Query(
         """
         SELECT * FROM materiales
         WHERE activo = 1
-          AND (nombre LIKE '%' || :texto || '%'
-            OR numeroParte LIKE '%' || :texto || '%'
-            OR fabricante LIKE '%' || :texto || '%'
-            OR descripcion LIKE '%' || :texto || '%')
+          AND (nombre LIKE '%' || :texto || '%' ESCAPE '\'
+            OR numeroParte LIKE '%' || :texto || '%' ESCAPE '\'
+            OR fabricante LIKE '%' || :texto || '%' ESCAPE '\'
+            OR descripcion LIKE '%' || :texto || '%' ESCAPE '\')
         ORDER BY nombre ASC
         """
     )

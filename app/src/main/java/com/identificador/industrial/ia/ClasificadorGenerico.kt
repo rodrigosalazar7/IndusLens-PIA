@@ -84,6 +84,15 @@ class ClasificadorGenerico(contexto: Context) {
                 )
             }
             .filter { it.etiqueta.isNotBlank() }
+            // ImageNet tiene mil clases y la enorme mayoria (por ejemplo "web
+            // site", "envelope" o "menu") no describe nada que exista en un
+            // almacen industrial. Sin este filtro, una textura cualquiera podia
+            // superar el umbral de confianza con una de esas clases y su
+            // nombre en ingles/mal traducido terminaba precargado como nombre
+            // de un material nuevo. Se descarta toda pista que no corresponda
+            // a ninguna familia del catalogo: es la misma prudencia que ya se
+            // aplicaba a la categoria, extendida a la pista completa.
+            .filter { it.categoria != null }
             .take(MAXIMO_PISTAS)
     }
 
