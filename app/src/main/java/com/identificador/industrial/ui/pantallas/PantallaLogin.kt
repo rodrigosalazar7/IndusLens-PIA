@@ -293,10 +293,6 @@ fun PantallaLogin(
                 )
             }
 
-            if (modo == ModoAcceso.ENTRAR) {
-                Spacer(Modifier.height(20.dp))
-                AvisoCredencialesDemo()
-            }
         }
     }
 }
@@ -384,33 +380,3 @@ private fun LogoIndusLens() {
     }
 }
 
-@Composable
-private fun AvisoCredencialesDemo() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Text(
-            text = "Acceso rapido para la demostracion",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        listOf(
-            "operador / 1234",
-            "almacen / 1234",
-            "admin / admin"
-        ).forEach {
-            Text(
-                text = it,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
