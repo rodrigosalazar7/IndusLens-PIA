@@ -1,5 +1,7 @@
 package com.identificador.industrial.ui.componentes
 
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -29,12 +31,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.identificador.industrial.ia.Fotos
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Armazon comun de todas las pantallas: barra superior con titulo, boton de
@@ -253,4 +264,52 @@ fun Insignia(
             )
             .padding(horizontal = 9.dp, vertical = 4.dp)
     )
+}
+
+/**
+ * Foto de referencia de un material del catalogo (la misma con la que se
+ * calculo su huella visual), para que la persona compare a simple vista si
+ * la pieza que tiene enfrente es la misma que senala la app.
+ *
+ * No se muestra nada, sin error ni espacio en blanco molesto, cuando el
+ * material no trae foto de referencia: es el caso normal de una pieza dada
+ * de alta sin `herramientas/generar_huellas.py`.
+ */
+@Composable
+fun FotoReferenciaMaterial(
+    fotoReferencia: String?,
+    modifier: Modifier = Modifier,
+    alto: androidx.compose.ui.unit.Dp = 160.dp,
+    mostrarEtiqueta: Boolean = true
+) {
+    if (fotoReferencia.isNullOrBlank()) return
+
+    val contexto = LocalContext.current
+    val mapa by produceState<Bitmap?>(initialValue = null, fotoReferencia) {
+        value = withContext(Dispatchers.IO) {
+            Fotos.cargarDeAssets(contexto, fotoReferencia)
+        }
+    }
+
+    val bitmap = mapa ?: return
+
+    Column(modifier = modifier) {
+        if (mostrarEtiqueta) {
+            Text(
+                text = "Foto de referencia del catalogo",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = "Foto de referencia de la pieza en el catalogo",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(alto)
+                .clip(RoundedCornerShape(14.dp))
+        )
+    }
 }
