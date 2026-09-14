@@ -5,10 +5,10 @@ import com.identificador.industrial.datos.modelo.Rol
 import android.content.Context
 
 /** Guarda solo los datos visibles de la sesion; nunca conserva contrasenas. */
-class SesionPersistida(contexto: Context) {
+class SesionPersistida(contexto: Context, archivo: String = ARCHIVO) {
 
     private val preferencias = contexto.applicationContext.getSharedPreferences(
-        ARCHIVO,
+        archivo,
         Context.MODE_PRIVATE
     )
 

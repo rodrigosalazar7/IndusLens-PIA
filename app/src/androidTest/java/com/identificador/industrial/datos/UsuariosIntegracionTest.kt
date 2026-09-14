@@ -168,4 +168,17 @@ class UsuariosIntegracionTest {
             assertNull(repo.autenticar("inactivo", "clave"))
         } finally { db.close() }
     }
+
+    @Test fun restauracionConsultaElRolActualYRechazaCuentaInactiva() = runBlocking {
+        val db = BaseDatos.crear(contexto, archivo)
+        try {
+            val repo = RepositorioUsuarios(db.usuarioDao())
+            assertEquals(Rol.ADMINISTRADOR, repo.restaurarActivo("u3")?.rol)
+            db.openHelper.writableDatabase.execSQL("UPDATE usuarios SET rol = 'OPERADOR' WHERE id = 'u3'")
+            assertEquals(Rol.OPERADOR, repo.restaurarActivo("u3")?.rol)
+            db.openHelper.writableDatabase.execSQL("UPDATE usuarios SET activo = 0 WHERE id = 'u3'")
+            assertNull(repo.restaurarActivo("u3"))
+            assertNull(repo.restaurarActivo("no-existe"))
+        } finally { db.close() }
+    }
 }

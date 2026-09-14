@@ -78,14 +78,14 @@ fun PantallaMenu(
 
             TarjetaAccion(
                 icono = Icons.Default.Settings,
-                titulo = "Administracion de materiales",
+                titulo = "Catálogo de piezas",
                 descripcion = if (usuario?.puedeAdministrar == true) {
                     "Alta, edicion y existencias del catalogo"
                 } else {
-                    "Requiere permisos de administrador"
+                    "Consulta existencias y ubicación de tu kit"
                 },
                 colorIcono = MaterialTheme.colorScheme.tertiary,
-                habilitada = usuario?.puedeAdministrar == true,
+                habilitada = usuario != null,
                 onClick = onAdministrar
             )
         }
@@ -141,6 +141,11 @@ private fun CabeceraUsuario(usuario: Usuario) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            } else {
+                Spacer(Modifier.height(5.dp))
+                Text("Modo local · disponible sin Internet",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

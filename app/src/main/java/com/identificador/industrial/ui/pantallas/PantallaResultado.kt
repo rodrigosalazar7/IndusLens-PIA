@@ -56,7 +56,7 @@ fun PantallaResultado(
     onVerSimilares: () -> Unit,
     onRepetirFoto: () -> Unit,
     onElegirPieza: () -> Unit,
-    onEsPiezaNueva: () -> Unit,
+    onEsPiezaNueva: (() -> Unit)?,
     onMedir: () -> Unit
 ) {
     val estado by identificacion.estado.collectAsStateWithLifecycle()
@@ -273,7 +273,7 @@ private fun HayParecidas(
     onVerSimilares: () -> Unit,
     onRepetirFoto: () -> Unit,
     onElegirPieza: () -> Unit,
-    onEsPiezaNueva: () -> Unit
+    onEsPiezaNueva: (() -> Unit)?
 ) {
     val objetoReconocido = pistas.firstOrNull()
 
@@ -335,7 +335,7 @@ private fun HayParecidas(
 
     // No esta en el catalogo, pero la foto ya sirve como su primera huella:
     // se guarda al dar de alta, sin tener que repetirla.
-    BotonSecundario(
+    if (onEsPiezaNueva != null) BotonSecundario(
         onClick = onEsPiezaNueva,
         shape = MaterialTheme.shapes.medium,
         modifier = Modifier
@@ -429,7 +429,7 @@ private fun SinAcierto(
     pistas: List<Pista>,
     onRepetirFoto: () -> Unit,
     onElegirPieza: () -> Unit,
-    onEsPiezaNueva: () -> Unit
+    onEsPiezaNueva: (() -> Unit)?
 ) {
     val objetoReconocido = pistas.firstOrNull()
 
@@ -514,7 +514,7 @@ private fun SinAcierto(
     // herramienta que la IA general si reconoce pero que nadie ha dado de
     // alta), esta es la salida: se registra y la foto que ya se tomo queda
     // como su primera huella, sin repetirla.
-    BotonSecundario(
+    if (onEsPiezaNueva != null) BotonSecundario(
         onClick = onEsPiezaNueva,
         shape = MaterialTheme.shapes.medium,
         modifier = Modifier

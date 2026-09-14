@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 
 /**
@@ -24,6 +26,7 @@ sealed interface EstadoDetalle {
     data object Cargando : EstadoDetalle
     data class Encontrado(val material: Material) : EstadoDetalle
     data object NoEncontrado : EstadoDetalle
+    data object Error : EstadoDetalle
 }
 
 class DetalleViewModel(
@@ -31,13 +34,13 @@ class DetalleViewModel(
     private val repositorioVisual: RepositorioVisual
 ) : ViewModel() {
 
-    private val idSolicitado = MutableStateFlow<String?>(null)
+    private val idSolicitado = MutableStateFlow<Pair<String, Int>?>(null)
 
     /** Cuantas vistas de referencia tiene la pieza para la busqueda visual. */
     @OptIn(ExperimentalCoroutinesApi::class)
     val vistas: StateFlow<Int> = idSolicitado
         .filterNotNull()
-        .flatMapLatest { id -> repositorioVisual.observarVistas(id) }
+        .flatMapLatest { (id, _) -> repositorioVisual.observarVistas(id).catch { emit(-1) } }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -47,11 +50,11 @@ class DetalleViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     val estado: StateFlow<EstadoDetalle> = idSolicitado
         .filterNotNull()
-        .flatMapLatest { id ->
-            repositorio.observarPorId(id).map { material ->
+        .flatMapLatest { (id, _) ->
+            repositorio.observarPorId(id).map<Material?, EstadoDetalle> { material ->
                 if (material == null) EstadoDetalle.NoEncontrado
                 else EstadoDetalle.Encontrado(material)
-            }
+            }.onStart { emit(EstadoDetalle.Cargando) }.catch { emit(EstadoDetalle.Error) }
         }
         .stateIn(
             scope = viewModelScope,
@@ -60,6 +63,10 @@ class DetalleViewModel(
         )
 
     fun cargar(materialId: String) {
-        if (idSolicitado.value != materialId) idSolicitado.value = materialId
+        if (idSolicitado.value?.first != materialId) idSolicitado.value = materialId to 0
+    }
+
+    fun reintentar() {
+        idSolicitado.value?.let { (id, revision) -> idSolicitado.value = id to revision + 1 }
     }
 }

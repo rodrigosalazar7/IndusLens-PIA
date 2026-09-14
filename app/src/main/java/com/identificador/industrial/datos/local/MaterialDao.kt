@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import com.identificador.industrial.datos.modelo.Categoria
 import com.identificador.industrial.datos.modelo.Material
 import kotlinx.coroutines.flow.Flow
@@ -97,14 +98,15 @@ interface MaterialDao {
         excluir: String
     ): List<Material>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertar(material: Material)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    // Actualiza por clave primaria sin borrar otra pieza por su numero de parte.
+    @Upsert
     suspend fun insertarTodos(materiales: List<Material>)
 
     @Update
-    suspend fun actualizar(material: Material)
+    suspend fun actualizar(material: Material): Int
 
     @Delete
     suspend fun eliminar(material: Material)

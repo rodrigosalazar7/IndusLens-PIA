@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -59,19 +61,19 @@ fun PantallaDetalle(
      * ahi durante meses.
      */
     puedeEditar: Boolean = false,
-    onEditar: (String) -> Unit = {}
+    onEditar: (String) -> Unit = {},
+    vm: DetalleViewModel = viewModel(factory = Fabricas.Detalle)
 ) {
-    val vm: DetalleViewModel = viewModel(factory = Fabricas.Detalle)
     val estado by vm.estado.collectAsStateWithLifecycle()
     val vistas by vm.vistas.collectAsStateWithLifecycle()
 
     LaunchedEffect(materialId) { vm.cargar(materialId) }
 
     PantallaBase(
-        titulo = "Detalle del material",
+        titulo = "Detalle de pieza",
         onVolver = onVolver,
         acciones = {
-            if (puedeEditar && estado is EstadoDetalle.Encontrado) {
+            if (puedeEditar && (estado as? EstadoDetalle.Encontrado)?.material?.activo == true) {
                 IconButton(onClick = { onEditar(materialId) }) {
                     Icon(
                         imageVector = Icons.Default.Edit,
@@ -97,12 +99,21 @@ fun PantallaDetalle(
                 )
             }
 
+            is EstadoDetalle.Error -> Centrado(modifier) {
+                Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text("No se pudo consultar la pieza.", color = MaterialTheme.colorScheme.error)
+                    BotonPrincipal(onClick = vm::reintentar) { Text("Reintentar") }
+                }
+            }
+
             is EstadoDetalle.Encontrado -> Contenido(
                 modifier = modifier,
                 material = actual.material,
                 vistas = vistas,
                 onVerUbicacion = onVerUbicacion,
-                onEnsenarPieza = onEnsenarPieza
+                onEnsenarPieza = onEnsenarPieza,
+                puedeEditar = puedeEditar,
+                onEditar = onEditar
             )
         }
     }
@@ -121,13 +132,15 @@ private fun Contenido(
     material: Material,
     vistas: Int,
     onVerUbicacion: (String) -> Unit,
-    onEnsenarPieza: (String) -> Unit
+    onEnsenarPieza: (String) -> Unit,
+    puedeEditar: Boolean,
+    onEditar: (String) -> Unit
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(Espaciado.pantalla),
+            .padding(Espaciado.pantalla).testTag("detalle_pieza"),
         verticalArrangement = Arrangement.spacedBy(Espaciado.normal)
     ) {
         Text(
@@ -136,7 +149,8 @@ private fun Contenido(
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        Row(horizontalArrangement = Arrangement.spacedBy(Espaciado.pequeno)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Espaciado.pequeno),
+            verticalArrangement = Arrangement.spacedBy(Espaciado.pequeno)) {
             Insignia(
                 texto = material.categoria.etiqueta,
                 color = MaterialTheme.colorScheme.secondary
@@ -145,6 +159,20 @@ private fun Contenido(
                 texto = textoExistencia(material),
                 color = colorExistencia(material)
             )
+        }
+
+        if (!material.activo) {
+            Text("Pieza dada de baja. Se conserva para consultar su historial.",
+                color = MaterialTheme.colorScheme.error)
+        } else {
+            BotonPrincipal(onClick = { onVerUbicacion(material.id) },
+                modifier = Modifier.fillMaxWidth().testTag("ver_ubicacion")) {
+                Text("Ver ubicación en almacén")
+            }
+            if (puedeEditar) BotonSecundario(onClick = { onEditar(material.id) },
+                modifier = Modifier.fillMaxWidth().testTag("editar_pieza")) {
+                Text("Editar pieza e inventario")
+            }
         }
 
         Tarjeta {
@@ -197,7 +225,7 @@ private fun Contenido(
             )
             Spacer(Modifier.height(Espaciado.pequeno))
             Text(
-                text = material.descripcion,
+                text = material.descripcion.ifBlank { "Sin descripción adicional." },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -257,6 +285,7 @@ private fun Contenido(
             Spacer(Modifier.height(10.dp))
             Insignia(
                 texto = when {
+                    vistas < 0 -> "No se pudieron consultar las vistas"
                     vistas == 0 -> "Sin vistas de referencia"
                     vistas >= EmbeddingMaterial.VISTAS_RECOMENDADAS -> "$vistas vistas · lista"
                     else -> "$vistas de ${EmbeddingMaterial.VISTAS_RECOMENDADAS} vistas"
@@ -275,13 +304,12 @@ private fun Contenido(
                             "reconocerla por su forma, sin depender del numero grabado."
 
                     vistas < EmbeddingMaterial.VISTAS_RECOMENDADAS ->
-                        "Ya se reconoce, pero solo desde angulos parecidos a los " +
-                            "que fotografiaste. Anade vistas desde otros lados y " +
-                            "sobre otros fondos para que acierte siempre."
+                        "Hay referencias guardadas. Añade otros ángulos y fondos, " +
+                            "y comprueba el resultado con una foto nueva."
 
                     else ->
-                        "Bien aprendida: se reconoce desde varios angulos aunque " +
-                            "no se vea ningun numero."
+                        "Hay varias referencias guardadas. El parecido es orientativo; " +
+                            "confirma el número de parte y las medidas antes de usar la pieza."
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
@@ -289,21 +317,12 @@ private fun Contenido(
             Spacer(Modifier.height(14.dp))
             BotonSecundario(
                 onClick = { onEnsenarPieza(material.id) },
+                enabled = material.activo,
                 shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(if (vistas == 0) "Ensenar esta pieza" else "Anadir otra vista")
             }
-        }
-
-        BotonPrincipal(
-            onClick = { onVerUbicacion(material.id) },
-            shape = MaterialTheme.shapes.medium,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = TamanosControles.alturaMinima)
-        ) {
-            Text("Ver ubicacion en almacen", style = MaterialTheme.typography.labelLarge)
         }
 
         Spacer(Modifier.height(Espaciado.pequeno))
@@ -335,11 +354,14 @@ private fun FilaDato(etiqueta: String, valor: String) {
     ) {
         Text(
             text = etiqueta,
+            modifier = Modifier.weight(1f).padding(end = 12.dp),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = valor,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.End,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
         )

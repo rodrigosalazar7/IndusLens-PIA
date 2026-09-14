@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.util.UUID
 
 /**
  * Unico punto de acceso al catalogo desde la interfaz.
@@ -25,6 +28,7 @@ class RepositorioMateriales(
 
     private val alcanceSincronizacion = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var trabajoSincronizacion: Job? = null
+    private val escrituras = Mutex()
 
     fun observarTodos(): Flow<List<Material>> = dao.observarTodos()
 
@@ -40,17 +44,62 @@ class RepositorioMateriales(
      * Busqueda por numero de parte. Normaliza lo recibido antes de consultar,
      * de modo que da igual como venga escrito desde el OCR.
      */
-    suspend fun buscarPorNumeroParte(numeroParte: String): Material? =
-        dao.buscarPorNumeroParte(Material.normalizarNumeroParte(numeroParte))
+    suspend fun buscarPorNumeroParte(numeroParte: String): Material? {
+        val normalizado = Material.normalizarNumeroParte(numeroParte)
+        if (normalizado.isBlank()) return null
+        return dao.obtenerTodosIncluyendoInactivos().firstOrNull {
+            it.activo && it.numeroParteNormalizado == normalizado
+        }
+    }
 
-    suspend fun guardar(material: Material) {
+    /** Genera la clave y realiza el alta bajo el mismo bloqueo, sin reemplazar registros. */
+    suspend fun crear(material: Material): Material = escrituras.withLock {
+        val id = if (baseRemota?.sesionRemotaActiva == true) {
+            "M-" + UUID.randomUUID().toString()
+        } else siguienteClave()
+        material.copy(id = id).also { insertarValidado(it) }
+    }
+
+    suspend fun guardar(material: Material) = escrituras.withLock {
+        insertarValidado(material)
+    }
+
+    private suspend fun insertarValidado(material: Material) {
+        require(dao.obtenerPorId(material.id) == null) { "Esa clave ya existe. Vuelve a intentar el alta." }
+        validar(material)
         // Para una cuenta Firebase, Firestore manda. Si las reglas rechazan
         // el cambio, tampoco se altera la cache y la app muestra el error.
         if (baseRemota?.sesionRemotaActiva == true) baseRemota.guardar(material)
         dao.insertar(material)
     }
 
-    suspend fun actualizar(material: Material) = guardar(material)
+    suspend fun actualizar(material: Material, esperado: Material? = null) = escrituras.withLock {
+        val actual = dao.obtenerPorId(material.id)
+            ?: error("La pieza ya no existe. Vuelve al catálogo.")
+        check(esperado == null || actual == esperado) {
+            "La pieza cambió mientras la editabas. Vuelve a abrirla para no sobrescribir esos cambios."
+        }
+        validar(material)
+        if (baseRemota?.sesionRemotaActiva == true) baseRemota.guardar(material)
+        check(dao.actualizar(material) == 1) { "No se pudo actualizar la pieza." }
+    }
+
+    private suspend fun validar(material: Material) {
+        require(material.id.isNotBlank() && material.nombre.isNotBlank()) { "La pieza necesita clave y nombre." }
+        require(material.numeroParteNormalizado.isNotBlank()) { "El número de parte debe contener letras o números." }
+        require(material.existencia >= 0 && material.existenciaMinima >= 0) { "Las existencias no pueden ser negativas." }
+        val u = material.ubicacion
+        require(u.almacen.isNotBlank() && u.pasillo.isNotBlank() && u.rack.isNotBlank() &&
+            u.nivel > 0 && u.posicion > 0) { "Completa una ubicación válida." }
+        val duplicado = dao.obtenerTodosIncluyendoInactivos().firstOrNull {
+            it.id != material.id && it.numeroParteNormalizado == material.numeroParteNormalizado
+        }
+        require(duplicado == null) {
+            "El número de parte ya pertenece a ${duplicado?.nombre}" +
+                (if (duplicado?.activo == false) " (dada de baja)." else ".") +
+                " Usa un código distinto; la pieza existente se conserva."
+        }
+    }
 
     suspend fun eliminar(material: Material) {
         if (baseRemota?.sesionRemotaActiva == true) baseRemota.eliminar(material.id)
@@ -68,9 +117,11 @@ class RepositorioMateriales(
      */
     suspend fun siguienteClave(): String {
         val numeros = dao.todosLosIds().mapNotNull { id ->
-            id.removePrefix("M-").toIntOrNull()
+            id.takeIf { it.startsWith("M-") }?.removePrefix("M-")?.toLongOrNull()
         }
-        val siguiente = (numeros.maxOrNull() ?: 0) + 1
+        val maximo = numeros.maxOrNull() ?: 0L
+        check(maximo < Long.MAX_VALUE) { "No se pudo generar otra clave interna." }
+        val siguiente = maximo + 1
         return "M-" + siguiente.toString().padStart(3, '0')
     }
 
@@ -100,7 +151,7 @@ class RepositorioMateriales(
         if (materialesRemotos.isEmpty() && esAdministrador) {
             remota.guardarTodos(dao.obtenerTodosIncluyendoInactivos())
         } else if (materialesRemotos.isNotEmpty()) {
-            dao.insertarTodos(materialesRemotos)
+            escrituras.withLock { dao.insertarTodos(materialesRemotos) }
         }
 
         trabajoSincronizacion?.cancel()
@@ -108,7 +159,7 @@ class RepositorioMateriales(
             remota.observarMateriales()
                 .catch { /* La cache local mantiene la app util sin red. */ }
                 .collectLatest { materiales ->
-                    if (materiales.isNotEmpty()) dao.insertarTodos(materiales)
+                    if (materiales.isNotEmpty()) escrituras.withLock { dao.insertarTodos(materiales) }
                 }
         }
     }

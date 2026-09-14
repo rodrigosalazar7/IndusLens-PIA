@@ -74,12 +74,23 @@ class SesionViewModel(
                     } else {
                         activar(restaurado)
                     }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    error = "No se pudo restaurar la sesión. Entra de nuevo."
+                    sesionPersistida.borrar()
                 } finally {
                     cargando = false
                 }
             }
         } else if (guardado != null) {
-            usuarioActivo = guardado
+            // Nunca publicar en Firebase al utilizar una cuenta de demostración.
+            repositorioMateriales.desconectarBaseRemota()
+            autenticacionCorreo.cerrarSesion()
+            ejecutar {
+                val vigente = repositorio.restaurarActivo(guardado.id)
+                if (vigente == null) sesionPersistida.borrar() else activar(vigente)
+            }
         }
     }
 
@@ -216,6 +227,10 @@ class SesionViewModel(
     }
 
     private suspend fun activar(usuario: Usuario) {
+        if (!usuario.remoto) {
+            repositorioMateriales.desconectarBaseRemota()
+            autenticacionCorreo.cerrarSesion()
+        }
         usuarioActivo = usuario
         correoPendiente = null
         error = null
@@ -224,7 +239,9 @@ class SesionViewModel(
         if (usuario.remoto) {
             try {
                 repositorioMateriales.conectarBaseRemota(usuario.puedeAdministrar)
-            } catch (_: Throwable) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
                 // El acceso y la identificacion siguen disponibles con Room.
                 // Una escritura administrativa remota si mostrara su error.
             }

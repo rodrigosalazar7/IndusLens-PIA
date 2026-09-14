@@ -3,212 +3,170 @@ package com.identificador.industrial.ui.pantallas
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.identificador.industrial.datos.RepositorioMateriales
-import com.identificador.industrial.datos.RepositorioVisual
 import com.identificador.industrial.datos.modelo.Categoria
 import com.identificador.industrial.datos.modelo.Material
 import com.identificador.industrial.datos.modelo.Ubicacion
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
-
-/**
- * Campos del formulario como texto.
- *
- * Se guardan en crudo, tal y como se escriben, y solo se convierten a numero
- * al validar. Si se guardaran ya como Int, borrar el ultimo digito de un campo
- * dejaria una cadena vacia que habria que interpretar como cero, y el usuario
- * veria aparecer un 0 que no ha escrito.
- */
-data class FormularioMaterial(
-    val id: String? = null,
-    val nombre: String = "",
-    val descripcion: String = "",
-    val numeroParte: String = "",
-    val fabricante: String = "",
-    val categoria: Categoria = Categoria.TORNILLERIA,
-    val unidadMedida: String = "Pieza",
-    val existencia: String = "0",
-    val existenciaMinima: String = "0",
-    val medidas: String = "",
-    val medidaClave: String = "",
-    val almacen: String = "A",
-    val pasillo: String = "01",
-    val rack: String = "A",
-    val nivel: String = "1",
-    val posicion: String = "1"
-) {
-    val esNuevo: Boolean get() = id == null
-}
+import java.util.Locale
 
 class EdicionViewModel(
     private val repositorio: RepositorioMateriales,
-    private val repositorioVisual: RepositorioVisual
+    private val estadoGuardado: SavedStateHandle = SavedStateHandle()
 ) : ViewModel() {
-
-    var formulario by mutableStateOf(FormularioMaterial())
+    var formulario by mutableStateOf(estadoGuardado.get<FormularioMaterial>("borrador") ?: FormularioMaterial())
         private set
-
+    var errores by mutableStateOf<Map<CampoMaterial, String>>(emptyMap())
+        private set
     var error by mutableStateOf<String?>(null)
         private set
-
+    var errorCarga by mutableStateOf<String?>(null)
+        private set
+    var cargando by mutableStateOf(true)
+        private set
     var guardando by mutableStateOf(false)
         private set
-
     var terminado by mutableStateOf(false)
         private set
-
-    /** Id con el que quedo guardado el material, para ensenarle una foto de inmediato. */
+    var dadaDeBaja by mutableStateOf(false)
+        private set
     var idGuardado: String? = null
         private set
 
-    private var cargado = false
+    private var inicializado = false
+    private var original: Material? = null
+    private var inicial = FormularioMaterial()
+    val tieneCambios: Boolean get() = !cargando && errorCarga == null && formulario != inicial
 
-    /**
-     * `sugerenciaNombre` y `sugerenciaCategoria` prellenan el alta cuando esta
-     * nace de una foto que la IA generica ya supo describir (por ejemplo
-     * "martillo"): ahorran escribir lo que la app ya cree saber, sin impedir
-     * corregirlo.
-     */
     fun cargar(
         materialId: String?,
         sugerenciaNombre: String? = null,
         sugerenciaCategoria: Categoria? = null
     ) {
-        if (cargado) return
-        cargado = true
-
+        if (inicializado) return
+        inicializado = true
+        errorCarga = null
+        cargando = true
         if (materialId.isNullOrBlank()) {
-            if (sugerenciaNombre != null || sugerenciaCategoria != null) {
-                formulario = formulario.copy(
-                    nombre = sugerenciaNombre?.replaceFirstChar { it.uppercase() }.orEmpty(),
-                    categoria = sugerenciaCategoria ?: formulario.categoria
-                )
-            }
+            inicial = FormularioMaterial(
+                nombre = sugerenciaNombre?.replaceFirstChar { it.uppercase() }.orEmpty(),
+                categoria = sugerenciaCategoria ?: Categoria.TORNILLERIA
+            )
+            formulario = estadoGuardado.get<FormularioMaterial>("borrador")
+                ?.takeIf { it.esNuevo } ?: inicial
+            cargando = false
             return
         }
-
         viewModelScope.launch {
-            val m = repositorio.obtenerPorId(materialId) ?: return@launch
-            formulario = FormularioMaterial(
-                id = m.id,
-                nombre = m.nombre,
-                descripcion = m.descripcion,
-                numeroParte = m.numeroParte,
-                fabricante = m.fabricante,
-                categoria = m.categoria,
-                unidadMedida = m.unidadMedida,
-                existencia = m.existencia.toString(),
-                existenciaMinima = m.existenciaMinima.toString(),
-                medidas = m.medidas.orEmpty(),
-                medidaClave = m.medidaClave.orEmpty(),
-                almacen = m.ubicacion.almacen,
-                pasillo = m.ubicacion.pasillo,
-                rack = m.ubicacion.rack,
-                nivel = m.ubicacion.nivel.toString(),
-                posicion = m.ubicacion.posicion.toString()
-            )
+            try {
+                val material = repositorio.obtenerPorId(materialId)
+                if (material == null || !material.activo) {
+                    errorCarga = "Esta pieza no existe o fue dada de baja. Vuelve al catálogo."
+                    return@launch
+                }
+                original = material
+                inicial = FormularioMaterial.desde(material)
+                formulario = estadoGuardado.get<FormularioMaterial>("borrador")
+                    ?.takeIf { it.id == materialId } ?: inicial
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                errorCarga = "No se pudo cargar la pieza. Revisa el almacenamiento e intenta de nuevo."
+            } finally {
+                cargando = false
+            }
         }
     }
 
+    fun reintentar(materialId: String?) {
+        if (cargando) return
+        inicializado = false
+        cargar(materialId)
+    }
+
     fun actualizar(nuevo: FormularioMaterial) {
-        formulario = nuevo
+        if (cargando || guardando || terminado || errorCarga != null) return
+        formulario = nuevo.copy(id = formulario.id)
+        estadoGuardado["borrador"] = formulario
+        if (errores.isNotEmpty()) errores = formulario.errores()
         error = null
     }
 
     fun guardar() {
-        if (guardando) return
+        if (cargando || guardando || terminado || errorCarga != null) return
         val f = formulario
-
-        val fallo = validar(f)
-        if (fallo != null) {
-            error = fallo
-            return
-        }
-
+        errores = f.errores()
+        if (errores.isNotEmpty()) return
+        error = null
+        guardando = true // Antes de lanzar la corrutina: ignora dobles pulsaciones.
         viewModelScope.launch {
-            guardando = true
             try {
-                // Si es alta, se comprueba que el numero de parte no exista ya.
-                // El indice unico lo impediria de todas formas, pero avisar
-                // claramente es mejor que dejar reventar la insercion.
-                val existente = repositorio.buscarPorNumeroParte(f.numeroParte)
-                if (existente != null && existente.id != f.id) {
-                    error = "Ya hay un material con el numero de parte " +
-                        "${existente.numeroParte}: ${existente.nombre}"
-                    guardando = false
-                    return@launch
-                }
-
                 val material = Material(
-                    id = f.id ?: repositorio.siguienteClave(),
-                    nombre = f.nombre.trim(),
-                    descripcion = f.descripcion.trim(),
-                    numeroParte = f.numeroParte.trim(),
-                    fabricante = f.fabricante.trim().ifBlank { "Generico" },
-                    categoria = f.categoria,
-                    unidadMedida = f.unidadMedida.trim().ifBlank { "Pieza" },
-                    existencia = f.existencia.toIntOrNull() ?: 0,
-                    existenciaMinima = f.existenciaMinima.toIntOrNull() ?: 0,
+                    id = f.id.orEmpty(), nombre = f.nombre.trim(),
+                    descripcion = f.descripcion.trim(), numeroParte = f.numeroParte.trim(),
+                    fabricante = f.fabricante.trim().ifBlank { "Genérico" },
+                    categoria = f.categoria, unidadMedida = f.unidadMedida.trim().ifBlank { "Pieza" },
+                    existencia = f.existencia.trim().toInt(),
+                    existenciaMinima = f.existenciaMinima.trim().toInt(),
                     ubicacion = Ubicacion(
-                        almacen = f.almacen.trim().uppercase(),
-                        pasillo = f.pasillo.trim(),
-                        rack = f.rack.trim().uppercase(),
-                        nivel = f.nivel.toIntOrNull() ?: 1,
-                        posicion = f.posicion.toIntOrNull() ?: 1
+                        almacen = f.almacen.trim().uppercase(Locale.ROOT), pasillo = f.pasillo.trim(),
+                        rack = f.rack.trim().uppercase(Locale.ROOT),
+                        nivel = f.nivel.trim().toInt(), posicion = f.posicion.trim().toInt()
                     ),
                     medidas = f.medidas.trim().ifBlank { null },
-                    medidaClave = f.medidaClave.trim().ifBlank { null }
+                    medidaClave = f.medidaClave.trim().ifBlank { null },
+                    fotoReferencia = original?.fotoReferencia,
+                    activo = original?.activo ?: true
                 )
-
-                repositorio.guardar(material)
-                idGuardado = material.id
-                terminado = true
-            } catch (e: Exception) {
-                error = e.message ?: "No se pudo guardar el material"
-            } finally {
-                guardando = false
-            }
-        }
-    }
-
-    /**
-     * Baja logica, no borrado.
-     *
-     * El material se marca como inactivo en lugar de eliminarlo: el historial
-     * de busquedas apunta a el, y borrarlo dejaria registros huerfanos que ya
-     * no se podrian explicar. Ademas, en un almacen real, "esta pieza ya no se
-     * usa" y "esta pieza nunca existio" no son lo mismo.
-     */
-    fun darDeBaja() {
-        val id = formulario.id ?: return
-        viewModelScope.launch {
-            guardando = true
-            try {
-                repositorio.obtenerPorId(id)?.let { material ->
-                    repositorio.actualizar(material.copy(activo = false))
-                    repositorioVisual.borrarHuellas(id)
+                val guardado = if (f.esNuevo) {
+                    repositorio.crear(material)
+                } else {
+                    repositorio.actualizar(material, esperado = original)
+                    material
                 }
-                idGuardado = id
+                idGuardado = guardado.id
+                estadoGuardado.remove<FormularioMaterial>("borrador")
                 terminado = true
-            } catch (e: Exception) {
-                error = e.message ?: "No se pudo dar de baja el material"
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IllegalArgumentException) {
+                error = e.message
+            } catch (e: IllegalStateException) {
+                error = e.message
+            } catch (_: Exception) {
+                error = "No se pudo guardar. Tus datos siguen en el formulario; intenta de nuevo."
             } finally {
                 guardando = false
             }
         }
     }
 
-    private fun validar(f: FormularioMaterial): String? = when {
-        f.nombre.isBlank() -> "El nombre es obligatorio"
-        f.numeroParte.isBlank() -> "El numero de parte es obligatorio"
-        f.existencia.toIntOrNull() == null -> "La existencia debe ser un numero"
-        f.existenciaMinima.toIntOrNull() == null -> "El minimo debe ser un numero"
-        (f.existencia.toIntOrNull() ?: 0) < 0 -> "La existencia no puede ser negativa"
-        f.nivel.toIntOrNull() == null -> "El nivel debe ser un numero"
-        f.posicion.toIntOrNull() == null -> "La posicion debe ser un numero"
-        f.pasillo.isBlank() -> "Indica el pasillo"
-        f.rack.isBlank() -> "Indica el rack"
-        else -> null
+    /** Baja lógica: conserva el registro y sus referencias, pero no participa en búsquedas. */
+    fun darDeBaja() {
+        if (cargando || guardando || terminado || errorCarga != null) return
+        val material = original ?: return
+        error = null
+        guardando = true
+        viewModelScope.launch {
+            try {
+                repositorio.actualizar(material.copy(activo = false), esperado = material)
+                dadaDeBaja = true
+                idGuardado = material.id
+                estadoGuardado.remove<FormularioMaterial>("borrador")
+                terminado = true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IllegalStateException) {
+                error = e.message
+            } catch (_: Exception) {
+                error = "No se pudo dar de baja. Intenta de nuevo."
+            } finally {
+                guardando = false
+            }
+        }
     }
 }

@@ -1,5 +1,9 @@
 package com.identificador.industrial.navegacion
 
+import android.widget.Toast
+import androidx.compose.material3.Text
+import com.identificador.industrial.ui.componentes.PantallaBase
+
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -124,9 +128,9 @@ fun NavegacionApp() {
                     }
                 },
                 onElegirPieza = { navController.navigate(Rutas.ELEGIR) },
-                onEsPiezaNueva = {
+                onEsPiezaNueva = if (sesion.usuarioActivo?.puedeAdministrar == true) ({
                     navController.navigate(Rutas.editar(materialId = null, aprenderFoto = true))
-                },
+                }) else null,
                 onMedir = { navController.navigate(Rutas.MEDIR) }
             )
         }
@@ -221,6 +225,7 @@ fun NavegacionApp() {
         // 10. Administracion de materiales
         composable(Rutas.ADMIN) {
             PantallaAdmin(
+                puedeEditar = sesion.usuarioActivo?.puedeAdministrar == true,
                 onVolver = { navController.popBackStack() },
                 onVerDetalle = { id -> navController.navigate(Rutas.detalle(id)) },
                 onEditar = { id -> navController.navigate(Rutas.editar(id)) },
@@ -245,6 +250,13 @@ fun NavegacionApp() {
             val materialId = entrada.arguments?.getString(Rutas.ARG_MATERIAL_ID).orEmpty()
             val aprenderFoto = entrada.arguments?.getBoolean(Rutas.ARG_APRENDER) ?: false
 
+            if (sesion.usuarioActivo?.puedeAdministrar != true) {
+                PantallaBase("Acceso restringido", onVolver = { navController.popBackStack() }) {
+                    Text("Solo un administrador puede registrar o editar piezas.", modifier = it)
+                }
+                return@composable
+            }
+
             // Solo tiene sentido cuando el alta nace de una identificacion sin
             // acierto: es ahi donde la IA generica pudo adivinar de que tipo de
             // objeto se trata.
@@ -264,7 +276,13 @@ fun NavegacionApp() {
                 sugerenciaNombre = pistaPrincipal?.etiqueta,
                 sugerenciaCategoria = pistaPrincipal?.categoria,
                 onVolver = { navController.popBackStack() },
+                onBaja = {
+                    Toast.makeText(contexto, "Pieza dada de baja. Su historial se conserva.", Toast.LENGTH_SHORT).show()
+                    navController.popBackStack()
+                    if (navController.currentDestination?.route == Rutas.DETALLE) navController.popBackStack()
+                },
                 onGuardado = { idGuardado ->
+                    Toast.makeText(contexto, "Pieza guardada correctamente", Toast.LENGTH_SHORT).show()
                     if (aprenderFoto) {
                         identificacion.confirmarPieza(
                             contexto = contexto,
@@ -276,6 +294,9 @@ fun NavegacionApp() {
                         navController.popBackStack(Rutas.RESULTADO, inclusive = false)
                     } else {
                         navController.popBackStack()
+                        if (navController.currentDestination?.route != Rutas.DETALLE) {
+                            navController.navigate(Rutas.detalle(idGuardado))
+                        }
                     }
                 }
             )
@@ -289,7 +310,9 @@ fun NavegacionApp() {
  */
 private fun NavHostController.volverAlLogin() {
     navigate(Rutas.LOGIN) {
-        popUpTo(graph.startDestinationId) { inclusive = true }
+        // El login ya salió de la pila al entrar. Vaciar el grafo impide
+        // regresar a pantallas autenticadas después de cerrar sesión.
+        popUpTo(graph.id) { inclusive = true }
         launchSingleTop = true
     }
 }

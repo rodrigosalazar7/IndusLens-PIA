@@ -24,6 +24,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
+import com.identificador.industrial.ui.componentes.BotonPrincipal
+import com.identificador.industrial.ui.componentes.BotonSecundario
 import com.identificador.industrial.ui.componentes.CampoTexto
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,17 +55,19 @@ fun PantallaAdmin(
     onVolver: () -> Unit,
     onVerDetalle: (String) -> Unit,
     onEditar: (String) -> Unit,
-    onNuevo: () -> Unit
+    onNuevo: () -> Unit,
+    puedeEditar: Boolean = true,
+    vm: CatalogoViewModel = viewModel(factory = Fabricas.Catalogo)
 ) {
-    val vm: CatalogoViewModel = viewModel(factory = Fabricas.Catalogo)
     val texto by vm.textoBusqueda.collectAsStateWithLifecycle()
-    val materiales by vm.materiales.collectAsStateWithLifecycle()
+    val estado by vm.estado.collectAsStateWithLifecycle()
+    val materiales = estado.materiales
 
     PantallaBase(
-        titulo = "Administracion",
+        titulo = "Catálogo de piezas",
         onVolver = onVolver,
         acciones = {
-            IconButton(onClick = onNuevo) {
+            if (puedeEditar) IconButton(onClick = onNuevo) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Anadir material nuevo",
@@ -75,7 +81,8 @@ fun PantallaAdmin(
             CampoTexto(
                 value = texto,
                 onValueChange = vm::cambiarBusqueda,
-                placeholder = { Text("Buscar por nombre, numero de parte o fabricante") },
+                label = { Text("Buscar piezas") },
+                placeholder = { Text("Nombre, número de parte o fabricante") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
                     if (texto.isNotEmpty()) {
@@ -86,32 +93,59 @@ fun PantallaAdmin(
                 shape = MaterialTheme.shapes.medium,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp).testTag("buscar_catalogo")
             )
 
             Text(
-                text = if (materiales.size == 1) "1 material" else "${materiales.size} materiales",
+                text = when {
+                    estado.cargando -> "Consultando catálogo…"
+                    estado.error -> "Consulta no disponible"
+                    materiales.size == 1 -> "1 pieza"
+                    else -> "${materiales.size} piezas"
+                },
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
             )
 
-            if (materiales.isEmpty()) {
+            if (puedeEditar && materiales.isNotEmpty()) {
+                BotonPrincipal(onClick = onNuevo, modifier = Modifier
+                    .fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).testTag("nueva_pieza")) {
+                    Text("Registrar nueva pieza")
+                }
+            }
+
+            if (estado.cargando || estado.error || materiales.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
+                    if (estado.cargando) {
+                        CircularProgressIndicator()
+                    } else Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text(
-                        text = if (texto.isBlank()) {
-                            "El catalogo esta vacio"
+                        text = if (estado.error) {
+                            "No se pudo consultar el catálogo. Intenta de nuevo."
+                        } else if (texto.isBlank()) {
+                            "Tu kit comienza aquí. Registra tu primera pieza con su existencia y ubicación."
                         } else {
                             "Ningun material coincide con \"$texto\""
                         },
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(Espaciado.extraGrande)
+                        modifier = Modifier.testTag("estado_catalogo")
                     )
+                    when {
+                        estado.error -> BotonPrincipal(onClick = vm::reintentar) { Text("Reintentar") }
+                        texto.isNotBlank() -> BotonSecundario(onClick = vm::limpiarBusqueda) { Text("Limpiar búsqueda") }
+                        puedeEditar -> BotonPrincipal(onClick = onNuevo, modifier = Modifier.testTag("nueva_pieza")) {
+                            Text("Registrar primera pieza")
+                        }
+                        else -> Text("Un administrador puede registrar el kit.", style = MaterialTheme.typography.bodySmall)
+                    }
+                    }
                 }
             } else {
                 LazyColumn(
@@ -122,7 +156,8 @@ fun PantallaAdmin(
                         FilaMaterial(
                             material = material,
                             onClick = { onVerDetalle(material.id) },
-                            onEditar = { onEditar(material.id) }
+                            onEditar = { onEditar(material.id) },
+                            puedeEditar = puedeEditar
                         )
                     }
                 }
@@ -135,7 +170,8 @@ fun PantallaAdmin(
 private fun FilaMaterial(
     material: Material,
     onClick: () -> Unit,
-    onEditar: () -> Unit
+    onEditar: () -> Unit,
+    puedeEditar: Boolean
 ) {
     ElevatedCard(
         onClick = onClick,
@@ -143,7 +179,7 @@ private fun FilaMaterial(
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().testTag("pieza_${material.id}")
     ) {
         Column(modifier = Modifier.padding(Espaciado.normal)) {
 
@@ -160,11 +196,13 @@ private fun FilaMaterial(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = material.numeroParte,
+                    modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
                     text = "  ·  ${material.fabricante}",
+                    modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -183,12 +221,12 @@ private fun FilaMaterial(
                     texto = "${material.existencia} ${material.unidadMedida}",
                     color = colorSegunExistencia(material)
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = material.ubicacion.codigo,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
+                        modifier = Modifier.weight(1f)
                             .background(
                                 color = MaterialTheme.colorScheme.surfaceVariant,
                                 shape = MaterialTheme.shapes.small
@@ -196,7 +234,7 @@ private fun FilaMaterial(
                             .padding(horizontal = 9.dp, vertical = 4.dp)
                     )
                     Spacer(Modifier.width(4.dp))
-                    IconButton(onClick = onEditar) {
+                    if (puedeEditar) IconButton(onClick = onEditar) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Editar ${material.nombre}",

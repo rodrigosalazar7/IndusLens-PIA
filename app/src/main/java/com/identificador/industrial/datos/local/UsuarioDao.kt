@@ -13,6 +13,9 @@ interface UsuarioDao {
     @Query("SELECT * FROM usuarios WHERE usuario = :usuario COLLATE NOCASE AND activo = 1 LIMIT 1")
     suspend fun buscarPorUsuario(usuario: String): UsuarioEntity?
 
+    @Query("SELECT * FROM usuarios WHERE id = :id AND activo = 1 LIMIT 1")
+    suspend fun buscarActivoPorId(id: String): UsuarioEntity?
+
     @Query("SELECT COUNT(*) FROM usuarios")
     suspend fun contar(): Int
 

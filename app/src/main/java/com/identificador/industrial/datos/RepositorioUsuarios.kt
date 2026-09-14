@@ -8,6 +8,11 @@ import kotlinx.coroutines.withContext
 
 class RepositorioUsuarios(private val dao: UsuarioDao) {
 
+    /** Restaura desde Room; no confía en un rol o estado activo guardado en preferencias. */
+    suspend fun restaurarActivo(id: String): Usuario? = dao.buscarActivoPorId(id)?.let {
+        Usuario(it.id, it.usuario, it.nombre, it.rol)
+    }
+
     /**
      * Devuelve el usuario si las credenciales son correctas, o null si no.
      *

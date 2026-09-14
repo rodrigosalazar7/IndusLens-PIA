@@ -4,6 +4,7 @@ import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.util.Locale
 
 /**
  * Un material del catalogo: la pieza que el trabajador quiere identificar.
@@ -60,6 +61,6 @@ data class Material(
 
     companion object {
         fun normalizarNumeroParte(valor: String): String =
-            valor.uppercase().filter { it.isLetterOrDigit() }
+            valor.uppercase(Locale.ROOT).filter { it.isLetterOrDigit() }
     }
 }

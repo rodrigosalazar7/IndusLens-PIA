@@ -13,6 +13,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.combine
+
+data class EstadoCatalogo(
+    val materiales: List<Material> = emptyList(),
+    val cargando: Boolean = true,
+    val error: Boolean = false
+)
 
 /**
  * Catalogo de materiales con buscador, para la pantalla de administracion.
@@ -23,6 +33,7 @@ class CatalogoViewModel(
 
     private val _textoBusqueda = MutableStateFlow("")
     val textoBusqueda: StateFlow<String> = _textoBusqueda.asStateFlow()
+    private val revision = MutableStateFlow(0)
 
     /**
      * El `debounce` evita lanzar una consulta por cada tecla pulsada: espera a
@@ -31,14 +42,24 @@ class CatalogoViewModel(
      * puede pintarse en pantalla el resultado de una busqueda ya obsoleta.
      */
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-    val materiales: StateFlow<List<Material>> = _textoBusqueda
+    val estado: StateFlow<EstadoCatalogo> = _textoBusqueda
         .debounce(250)
-        .flatMapLatest { texto -> repositorio.buscar(texto) }
+        .combine(revision) { texto, _ -> texto }
+        .flatMapLatest { texto -> repositorio.buscar(texto)
+            .map { EstadoCatalogo(materiales = it, cargando = false) }
+            .onStart { emit(EstadoCatalogo()) }
+            .catch { emit(EstadoCatalogo(cargando = false, error = true)) }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyList()
+            initialValue = EstadoCatalogo()
         )
+
+    val materiales = estado.map { it.materiales }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun reintentar() { revision.value += 1 }
 
     fun cambiarBusqueda(texto: String) {
         _textoBusqueda.value = texto

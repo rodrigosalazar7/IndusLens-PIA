@@ -1,6 +1,7 @@
 package com.identificador.industrial.ui
 
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.identificador.industrial.AplicacionIdentificador
@@ -82,7 +83,7 @@ object Fabricas {
     val Edicion = viewModelFactory {
         initializer {
             val app = aplicacion()
-            EdicionViewModel(app.repositorioMateriales, app.repositorioVisual)
+            EdicionViewModel(app.repositorioMateriales, createSavedStateHandle())
         }
     }
 

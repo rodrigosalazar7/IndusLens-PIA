@@ -50,7 +50,9 @@ class RepositorioVisual(
         val huellas = embeddingDao.todos(EmbeddingMaterial.MODELO_ACTUAL)
         if (huellas.isEmpty()) return emptyList()
 
-        val puntuadas = huellas
+        val activos = materialDao.obtenerTodosIncluyendoInactivos()
+            .filter { it.activo }.associateBy { it.id }
+        val puntuadas = huellas.filter { it.materialId in activos }
             .mapNotNull { huella ->
                 val guardado = huella.comoFloats()
                 if (guardado.size != vector.size) {
@@ -71,7 +73,7 @@ class RepositorioVisual(
             .take(limite)
 
         return puntuadas.mapNotNull { (materialId, similitud) ->
-            materialDao.obtenerPorId(materialId)?.let { material ->
+            activos[materialId]?.let { material ->
                 Coincidencia(material, similitud)
             }
         }
