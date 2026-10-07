@@ -95,8 +95,14 @@ Cuatro pruebas: el catalogo real de la app es valido; se descarta un numero
 de parte repetido aunque cambie el formato; se descarta una clave repetida; y
 se descartan datos vacios o fuera de rango.
 
+## Verificacion
+
+- Compilacion `debug` correcta el 7 de octubre de 2026.
+- 11 pruebas automaticas ejecutadas: 11 correctas, 0 fallos (4 nuevas del validador).
+- Cambios integrados en `main`.
+
 ## Pendiente
 
-- Compilar y correr las pruebas: todavia no se ha hecho con estos cambios.
+- Probar la nueva pantalla de catalogo en un telefono fisico.
 - Proximas actividades (12 de octubre): 32 y 33, CameraX y pantalla de
   captura, que ya existen desde septiembre y solo requieren revision.
