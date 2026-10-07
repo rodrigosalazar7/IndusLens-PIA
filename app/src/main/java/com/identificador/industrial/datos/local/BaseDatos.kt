@@ -1,6 +1,7 @@
 package com.identificador.industrial.datos.local
 
 import android.content.Context
+import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -10,6 +11,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.execSQL
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.identificador.industrial.datos.CatalogoInicial
+import com.identificador.industrial.datos.ValidadorCatalogo
 import com.identificador.industrial.datos.modelo.Busqueda
 import com.identificador.industrial.datos.modelo.EmbeddingMaterial
 import com.identificador.industrial.datos.modelo.Material
@@ -41,6 +43,8 @@ abstract class BaseDatos : RoomDatabase() {
 
         /** Huellas precalculadas por el script de Python. Opcional. */
         private const val ARCHIVO_HUELLAS = "huellas_iniciales.json"
+
+        private const val ETIQUETA_LOG = "BaseDatos"
 
         /**
          * Version 1 -> 2: llega la tabla de huellas visuales.
@@ -167,9 +171,16 @@ abstract class BaseDatos : RoomDatabase() {
 
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
-                insertarMateriales(db)
+                // Se siembra solo lo que pasa la validacion: un material
+                // defectuoso se descarta con aviso en Logcat en lugar de
+                // romper el INSERT y cerrar la app en la primera apertura.
+                val revision = ValidadorCatalogo.validar(CatalogoInicial.materiales)
+                revision.problemas.forEach { p ->
+                    Log.w(ETIQUETA_LOG, "Material ${p.materialId} descartado: ${p.motivo}")
+                }
+                insertarMateriales(db, revision.validos)
                 insertarUsuarios(db)
-                insertarHuellas(db)
+                insertarHuellas(db, revision.validos.map { it.id }.toSet())
             }
 
             /**
@@ -180,7 +191,7 @@ abstract class BaseDatos : RoomDatabase() {
              * la app arranca igual y las piezas se van ensenando una a una
              * desde la ficha de cada material.
              */
-            private fun insertarHuellas(db: SupportSQLiteDatabase) {
+            private fun insertarHuellas(db: SupportSQLiteDatabase, idsSembrados: Set<String>) {
                 val contenido = try {
                     contexto.assets.open(ARCHIVO_HUELLAS)
                         .bufferedReader()
@@ -199,6 +210,8 @@ abstract class BaseDatos : RoomDatabase() {
 
                 for (i in 0 until lista.length()) {
                     val fila = lista.getJSONObject(i)
+                    // Una huella de un material descartado quedaria huerfana.
+                    if (fila.getString("materialId") !in idsSembrados) continue
                     val valores = fila.getJSONArray("vector")
                     val vector = FloatArray(valores.length()) { j ->
                         valores.getDouble(j).toFloat()
@@ -215,7 +228,7 @@ abstract class BaseDatos : RoomDatabase() {
                 }
             }
 
-            private fun insertarMateriales(db: SupportSQLiteDatabase) {
+            private fun insertarMateriales(db: SupportSQLiteDatabase, materiales: List<Material>) {
                 val sql = """
                     INSERT INTO materiales
                     (id, nombre, descripcion, numeroParte, fabricante, categoria,
@@ -225,7 +238,7 @@ abstract class BaseDatos : RoomDatabase() {
                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """.trimIndent()
 
-                CatalogoInicial.materiales.forEach { m ->
+                materiales.forEach { m ->
                     // El tipo se declara explicito: la lista mezcla textos,
                     // numeros y nulos, y sin ayuda Kotlin infiere un tipo
                     // interseccion que no sirve para execSQL.

@@ -15,6 +15,7 @@ import com.identificador.industrial.ui.Fabricas
 import com.identificador.industrial.ui.pantallas.EstadoIdentificacion
 import com.identificador.industrial.ui.pantallas.PantallaAdmin
 import com.identificador.industrial.ui.pantallas.PantallaCamara
+import com.identificador.industrial.ui.pantallas.PantallaCatalogo
 import com.identificador.industrial.ui.pantallas.PantallaDetalle
 import com.identificador.industrial.ui.pantallas.PantallaEditarMaterial
 import com.identificador.industrial.ui.pantallas.PantallaElegirPieza
@@ -72,6 +73,7 @@ fun NavegacionApp() {
                     identificacion.reiniciar()
                     navController.navigate(Rutas.CAMARA)
                 },
+                onCatalogo = { navController.navigate(Rutas.CATALOGO) },
                 onHistorial = { navController.navigate(Rutas.HISTORIAL) },
                 onAdministrar = { navController.navigate(Rutas.ADMIN) },
                 onCerrarSesion = {
@@ -207,6 +209,14 @@ fun NavegacionApp() {
             PantallaUbicacion(
                 materialId = materialId,
                 onVolver = { navController.popBackStack() }
+            )
+        }
+
+        // Consulta del catalogo
+        composable(Rutas.CATALOGO) {
+            PantallaCatalogo(
+                onVolver = { navController.popBackStack() },
+                onVerDetalle = { id -> navController.navigate(Rutas.detalle(id)) }
             )
         }
 

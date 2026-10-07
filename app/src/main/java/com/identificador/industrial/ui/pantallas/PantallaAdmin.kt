@@ -72,60 +72,94 @@ fun PantallaAdmin(
     ) { modifier ->
         Column(modifier = modifier.fillMaxSize()) {
 
-            OutlinedTextField(
-                value = texto,
-                onValueChange = vm::cambiarBusqueda,
-                placeholder = { Text("Buscar por nombre, numero de parte o fabricante") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (texto.isNotEmpty()) {
-                        TextButton(onClick = vm::limpiarBusqueda) { Text("Limpiar") }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            BuscadorCatalogo(
+                texto = texto,
+                onCambiar = vm::cambiarBusqueda,
+                onLimpiar = vm::limpiarBusqueda
             )
 
+            ListaMateriales(
+                materiales = materiales,
+                textoBusqueda = texto,
+                onVerDetalle = onVerDetalle,
+                onEditar = onEditar
+            )
+        }
+    }
+}
+
+/** Campo de busqueda del catalogo, compartido con la pantalla de consulta. */
+@Composable
+internal fun BuscadorCatalogo(
+    texto: String,
+    onCambiar: (String) -> Unit,
+    onLimpiar: () -> Unit
+) {
+    OutlinedTextField(
+        value = texto,
+        onValueChange = onCambiar,
+        placeholder = { Text("Buscar por nombre, numero de parte o fabricante") },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        trailingIcon = {
+            if (texto.isNotEmpty()) {
+                TextButton(onClick = onLimpiar) { Text("Limpiar") }
+            }
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    )
+}
+
+/**
+ * Conteo y lista de materiales, o el aviso de lista vacia.
+ *
+ * Sin `onEditar` la lista es de solo consulta: no se dibuja el lapiz.
+ */
+@Composable
+internal fun ListaMateriales(
+    materiales: List<Material>,
+    textoBusqueda: String,
+    onVerDetalle: (String) -> Unit,
+    onEditar: ((String) -> Unit)? = null
+) {
+    Text(
+        text = if (materiales.size == 1) "1 material" else "${materiales.size} materiales",
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+    )
+
+    if (materiales.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
             Text(
-                text = if (materiales.size == 1) "1 material" else "${materiales.size} materiales",
-                style = MaterialTheme.typography.labelLarge,
+                text = if (textoBusqueda.isBlank()) {
+                    "No hay materiales que mostrar"
+                } else {
+                    "Ningun material coincide con \"$textoBusqueda\""
+                },
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(32.dp)
             )
-
-            if (materiales.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (texto.isBlank()) {
-                            "El catalogo esta vacio"
-                        } else {
-                            "Ningun material coincide con \"$texto\""
-                        },
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(32.dp)
-                    )
-                }
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(materiales, key = { it.id }) { material ->
-                        FilaMaterial(
-                            material = material,
-                            onClick = { onVerDetalle(material.id) },
-                            onEditar = { onEditar(material.id) }
-                        )
-                    }
-                }
+        }
+    } else {
+        LazyColumn(
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(materiales, key = { it.id }) { material ->
+                FilaMaterial(
+                    material = material,
+                    onClick = { onVerDetalle(material.id) },
+                    onEditar = onEditar?.let { editar -> { editar(material.id) } }
+                )
             }
         }
     }
@@ -135,7 +169,7 @@ fun PantallaAdmin(
 private fun FilaMaterial(
     material: Material,
     onClick: () -> Unit,
-    onEditar: () -> Unit
+    onEditar: (() -> Unit)?
 ) {
     ElevatedCard(
         onClick = onClick,
@@ -195,13 +229,15 @@ private fun FilaMaterial(
                             )
                             .padding(horizontal = 9.dp, vertical = 4.dp)
                     )
-                    Spacer(Modifier.width(4.dp))
-                    IconButton(onClick = onEditar) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Editar ${material.nombre}",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                    if (onEditar != null) {
+                        Spacer(Modifier.width(4.dp))
+                        IconButton(onClick = onEditar) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Editar ${material.nombre}",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }

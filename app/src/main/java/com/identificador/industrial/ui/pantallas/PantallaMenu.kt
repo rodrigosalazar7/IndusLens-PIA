@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -37,6 +38,7 @@ import com.identificador.industrial.ui.componentes.TarjetaAccion
 fun PantallaMenu(
     usuario: Usuario?,
     onIdentificar: () -> Unit,
+    onCatalogo: () -> Unit,
     onHistorial: () -> Unit,
     onAdministrar: () -> Unit,
     onCerrarSesion: () -> Unit
@@ -66,6 +68,14 @@ fun PantallaMenu(
                 titulo = "Identificar pieza",
                 descripcion = "Toma una foto y la IA reconoce el componente",
                 onClick = onIdentificar
+            )
+
+            TarjetaAccion(
+                icono = Icons.AutoMirrored.Filled.List,
+                titulo = "Catalogo de materiales",
+                descripcion = "Busca una pieza por nombre, numero de parte o categoria",
+                colorIcono = MaterialTheme.colorScheme.primary,
+                onClick = onCatalogo
             )
 
             TarjetaAccion(

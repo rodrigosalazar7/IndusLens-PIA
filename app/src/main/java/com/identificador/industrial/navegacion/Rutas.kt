@@ -51,6 +51,9 @@ object Rutas {
     // Medir la pieza sobre la foto usando un objeto de tamano conocido.
     const val MEDIR = "medir"
 
+    // Consulta del catalogo, de solo lectura, para cualquier rol.
+    const val CATALOGO = "catalogo"
+
     // Alta y edicion de materiales. Sin argumento, es un alta.
     //
     // "aprender" distingue el alta que nace de una identificacion fallida: en
